@@ -13,12 +13,14 @@ class Chef:
         if (isinstance(self.holding, ingredient.Veggie) or isinstance(self.holding, ingredient.Meat)
             and not self.holding.isChopped):
             self.holding.isChopped = True
+            self.holding.isRaw = False
 
     def cook(self):
         #not cooked -> cooking -> cooked
         if (isinstance(self.holding, ingredient.Meat) and self.holding.isChopped 
             and not self.holding.isCooked):
             self.holding.isCooked = True
+            self.holding.isRaw = False
         #must be chopped first?
 
     def serve(self, ingredient, plate):
