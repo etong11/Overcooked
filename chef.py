@@ -1,21 +1,24 @@
 import ingredient
 
 class Chef:
-    def __init__(self, player):
+    def __init__(self, player, x, y, radius):
         #designate as player 0 or 1
         self.player = player
+        self.x, self.y = x, y
+        self.r = radius
         self.holding = None #will hold item, can only hold 1 at a time
     
-    def chop(self, ingredient):
+    def chop(self):
         #add time to chopping
-        if self.holding != None and (isinstance(ingredient, ingredient.Veggie) or 
-                isinstance(ingredient, ingredient.Meat)):
-            ingredient.isChopped = True
+        if (isinstance(self.holding, ingredient.Veggie) or isinstance(self.holding, ingredient.Meat)
+            and not self.holding.isChopped):
+            self.holding.isChopped = True
 
-    def cook(self, meat):
+    def cook(self):
         #not cooked -> cooking -> cooked
-        if self.holding != None and isinstance(meat, ingredient.Meat):
-            meat.isCooked = True
+        if (isinstance(self.holding, ingredient.Meat) and self.holding.isChopped 
+            and not self.holding.isCooked):
+            self.holding.isCooked = True
         #must be chopped first?
 
     def serve(self, ingredient, plate):
