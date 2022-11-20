@@ -6,6 +6,7 @@ import copy
 import chef
 import ingredient
 import box
+import rat
 
 #Overchefed
 
@@ -41,7 +42,7 @@ def appStarted(app):
     app.sink = box.Box(None, app.width/2, app.counterY0-app.boxSize, app.boxSize)
 
     app.placedIngred = []
-    app.order1 = ingredient.Order()
+    app.orders = [ingredient.Order()]
     app.orderBox = box.Box(None, app.counterX1, app.width/2, app.boxSize)
      
     plateX, plateY = app.counterX1*(2/3), app.counterY1+app.boxSize/2
@@ -49,6 +50,11 @@ def appStarted(app):
     app.plate = ingredient.Plate(None, plateX, plateY)
     app.dirtyPlates = []
     app.time = 0
+    app.timerDelay = 1000
+    app.paused = False
+    app.score = 0
+
+    app.rat = None
 
 def keyPressed(app, event):
     if event.key == 'w':
@@ -76,9 +82,11 @@ def keyPressed(app, event):
             if inRange(app, app.chef1, app.stove):
                 #cook() only cooks if given chopped meat
                 app.chef1.cook()
-            elif (inRange(app, app.chef1, app.orderBox) and app.chef1.holding == app.order1.order
+            elif (inRange(app, app.chef1, app.orderBox) and app.chef1.holding == app.orders[0].order
                     and app.chef1.holding.plate != None):
-                app.chef1.serve(app.order1)
+                app.chef1.serve(app.orders[0])
+                #check if always valid
+                app.score += 1
             elif (inRange(app, app.chef1, app.sink) and isinstance(app.chef1.holding, ingredient.Plate)
                     and not app.chef1.holding.clean):
                 app.chef1.holding.clean = True
@@ -97,15 +105,47 @@ def keyPressed(app, event):
                 or isinstance(app.chef1.holding, ingredient.Meat)):
             app.chef1.chop()
         #dash?
+    elif event.key == 'Escape':
+        app.paused = not app.paused
 
 def timerFired(app):
-    app.time += 1
-    if app.order1.orderDone:
+    if not app.paused:
+        app.time += 1
+    #prevent indexing error if no orders
+    if app.orders != [] and app.orders[0].orderDone:
         plateX, plateY = app.counterX1+app.boxSize/2, app.orderBox.y0-app.boxSize*2
         newDirtyPlate = ingredient.Plate(None, plateX, plateY)
         newDirtyPlate.clean = False
         app.dirtyPlates.append(newDirtyPlate)
-        app.order1.orderDone = False
+        app.orders.pop(0)
+    if app.time%10 == 0 and len(app.orders) <= 5: #sets a max of 5 orders at a time
+        app.orders.append(ingredient.Order())
+    if app.orders != []:
+        orderNum = 0
+        while orderNum < len(app.orders):
+            order = app.orders[orderNum]
+            order.countdown()
+            if order.orderFailed:
+                app.orders.pop(orderNum) #remove order w/o rewarding points
+            else:
+                orderNum += 1
+    if 0 <= app.time%10 <= 2 and app.placedIngred != [] and app.rat == None:
+        spawnRat(app)
+    if app.rat != None:
+        #increase speed
+        app.rat.grabFood()
+        if app.rat.hasFood:
+            app.placedIngred.remove(app.rat.target)
+            app.rat = None
+        ingredMoved = True
+        for ingred in app.placedIngred:
+            if ingred == app.rat.target:
+                ingredMoved = False
+        if ingredMoved:
+            app.rat.dead = True
+            app.rat = None
+    if app.time == 1000:
+        app.time = 0
 
 def moveChef(app, dx, dy):
     newX, newY = app.chef1.x + dx*5, app.chef1.y + dy*5
@@ -198,10 +238,22 @@ def inRange(app, chef, box):
     else:
         return False
 
+#spawns in a rat with a given target
+def spawnRat(app):
+    target = app.placedIngred[0] #change so ingred obj has x, y
+    targetX, targetY = target[1], target[2]
+    app.rat = rat.Rat(app, target, targetX, targetY)
+
 def redrawAll(app, canvas):
+    canvas.create_text(50, app.height-50, text=app.time)
+    #shows score
+    canvas.create_text(app.width-40, 20, text=f'score:{app.score}')
     #prints order
-    if not app.order1.orderDone:
-        canvas.create_text(70, 50, text='order: '+str(app.order1))
+    for order in app.orders:
+        if not order.orderDone:
+            num = app.orders.index(order) + 1
+            canvas.create_text(90*num, 50, text='order: '+str(order))
+            canvas.create_text(90*num, 20, text=f'time left:{order.orderTime}')
     #draws counter
     canvas.create_rectangle(app.counterX0, app.counterY0, app.counterX1, app.counterY1)
     canvas.create_rectangle(app.counterX0-app.boxSize, app.counterY0-app.boxSize, 
@@ -245,5 +297,10 @@ def redrawAll(app, canvas):
     for plate in app.dirtyPlates:
         canvas.create_oval(plate.x-plate.r, plate.y-plate.r, plate.x+plate.r, plate.y+plate.r)
         canvas.create_text(plate.x, plate.y, text='dirty plates')
+    #draw rat
+    if app.rat != None and not app.rat.dead:
+        r = 30
+        canvas.create_oval(app.rat.x-r, app.rat.y-r, app.rat.x+r, app.rat.y+r)
+        canvas.create_text(app.rat.x, app.rat.y, text=app.rat)
     
 runApp(width=800, height=600)

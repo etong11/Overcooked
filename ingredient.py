@@ -95,6 +95,8 @@ class Order:
         ingredients = {str(lettuce), str(tomato)}
         self.order = Burger(ingredients) #burger with specific ingredients
         self.orderDone = False
+        self.orderTime = 15 #modify based on recipe difficulty
+        self.orderFailed = False
     
     def __repr__(self):
         descrip = ''
@@ -107,6 +109,12 @@ class Order:
             return True
         else:
             return False
+    
+    def countdown(self):
+        if self.orderTime > 0:
+            self.orderTime -= 1
+        else:
+            self.orderFailed = True
 
 class Plate:
     def __init__(self, meal, x, y):

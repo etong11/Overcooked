@@ -33,3 +33,6 @@ class Chef:
         if not plate.clean:
             plate.clean = True
     
+    def killRat(self, rat):
+        rat.dead = True
+    
