@@ -23,7 +23,13 @@ class Chef:
             self.holding.isRaw = False
         #must be chopped first?
 
-    def serve(self, ingredient, plate):
-        pass
-        #adds ingredient to plate (can be on counter or in hand)
+    def serve(self, order):
+        order.orderDone = True
+        self.holding = None
+    
+    #add method that adds ingredient to plate (can be on counter or in hand)
+    
+    def wash(self, plate):
+        if not plate.clean:
+            plate.clean = True
     

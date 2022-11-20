@@ -60,12 +60,14 @@ class Burger:
     def __init__(self, ingredients):
         #ingredients is a set of the ingredient obj in burger
         self.ingredients = ingredients
-        self.onPlate = False
+        self.plate = None
     
     def __repr__(self):
         name = ''
         for ingred in self.ingredients:
             name += str(ingred)
+        if self.plate != None:
+            name += str(self.plate)
         return name
     
     def __eq__(self, other):
@@ -76,6 +78,9 @@ class Burger:
     
     def addIngred(self, ingred):
         self.ingredients.add(str(ingred))
+    
+    def plateBurger(self, plate):
+        self.plate = plate # plate object
 
 class Order:
     def __init__(self):
@@ -89,6 +94,7 @@ class Order:
         #look into making classes immutable -> error: can't put mutable obj in set
         ingredients = {str(lettuce), str(tomato)}
         self.order = Burger(ingredients) #burger with specific ingredients
+        self.orderDone = False
     
     def __repr__(self):
         descrip = ''
@@ -96,14 +102,28 @@ class Order:
             descrip += str(ingred)
         return descrip
 
-    def completeOrder(self, target):
-        if self.order == target:
-            print('true')
+    def completeOrder(self, target): #target is a burger obj
+        if self.order == target and target.plate != None:
             return True
         else:
-            print('false')
             return False
 
 class Plate:
-    def __init__(self, meal):
+    def __init__(self, meal, x, y):
         self.meal = meal
+        self.clean = True
+        self.r = 20
+        self.x, self.y = x, y #center coords
+    
+    def __repr__(self):
+        descrip = ''
+        if self.clean:
+            descrip += 'clean'
+        else:
+            descrip += 'dirty'
+        descrip += 'plate'
+        return descrip
+
+    def plate(self, burger):
+        burger.plateBurger(self)
+        self.meal = burger

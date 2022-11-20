@@ -38,12 +38,16 @@ def appStarted(app):
 
     app.chopBoard = box.Box(None, app.counterX0+app.boxSize, app.counterY1, app.boxSize)
     app.stove = box.Box(None, app.counterX0+app.boxSize, app.counterY0-app.boxSize, app.boxSize)
+    app.sink = box.Box(None, app.width/2, app.counterY0-app.boxSize, app.boxSize)
 
     app.placedIngred = []
     app.order1 = ingredient.Order()
-    app.orderDone = False
     app.orderBox = box.Box(None, app.counterX1, app.width/2, app.boxSize)
-
+     
+    plateX, plateY = app.counterX1*(2/3), app.counterY1+app.boxSize/2
+    #change to a list, also show on screen how many plates left (if stacked)
+    app.plate = ingredient.Plate(None, plateX, plateY)
+    app.dirtyPlates = []
     app.time = 0
 
 def keyPressed(app, event):
@@ -57,26 +61,36 @@ def keyPressed(app, event):
         moveChef(app, +1, 0)
     elif event.key == 'Space':
         if app.chef1.holding == None:
-        #checks if in range of ingredient boxes
-            for box in app.boxes:
-                if inRange(app, app.chef1, box):
-                    #picks up ingredient if within range of the box
-                    app.chef1.holding = copy.copy(box.ingredient)
-            pickUp(app)
+            if (app.dirtyPlates != [] and inRange(app, app.chef1, app.dirtyPlates[0])):
+                app.chef1.holding = app.dirtyPlates[0]
+                app.dirtyPlates.pop()
+            else:
+                #checks if in range of ingredient boxes
+                for box in app.boxes:
+                    if inRange(app, app.chef1, box):
+                        #picks up ingredient if within range of the box
+                        app.chef1.holding = copy.copy(box.ingredient)
+                pickUp(app)
         else:
             #checks if in range of stove
             if inRange(app, app.chef1, app.stove):
                 #cook() only cooks if given chopped meat
                 app.chef1.cook()
-            elif inRange(app, app.chef1, app.orderBox) and app.chef1.holding == app.order1.order:
-                app.orderDone = True
-                app.chef1.holding = None
+            elif (inRange(app, app.chef1, app.orderBox) and app.chef1.holding == app.order1.order
+                    and app.chef1.holding.plate != None):
+                app.chef1.serve(app.order1)
+            elif (inRange(app, app.chef1, app.sink) and isinstance(app.chef1.holding, ingredient.Plate)
+                    and not app.chef1.holding.clean):
+                app.chef1.holding.clean = True
             #checks if in range of counter, if so then drop the item
             elif not (inRange(app, app.chef1, app.boxes[0]) or inRange(app, app.chef1, app.boxes[1])
                 or inRange(app, app.chef1, app.boxes[2]) or inRange(app, app.chef1, app.boxes[3])
                 or inRange(app, app.chef1, app.chopBoard) or inRange(app, app.chef1, app.orderBox)):
-                pickUp(app)
-                placeOnCounter(app)
+                if inRange(app, app.chef1, app.plate):
+                    app.chef1.holding.plateBurger(app.plate) #must hold burger -> can plate it
+                else:
+                    pickUp(app)
+                    placeOnCounter(app)
     elif event.key == 'Tab':
         #checks if in range of chopping board
         if inRange(app, app.chef1, app.chopBoard) and (isinstance(app.chef1.holding, ingredient.Veggie)
@@ -86,6 +100,12 @@ def keyPressed(app, event):
 
 def timerFired(app):
     app.time += 1
+    if app.order1.orderDone:
+        plateX, plateY = app.counterX1+app.boxSize/2, app.orderBox.y0-app.boxSize*2
+        newDirtyPlate = ingredient.Plate(None, plateX, plateY)
+        newDirtyPlate.clean = False
+        app.dirtyPlates.append(newDirtyPlate)
+        app.order1.orderDone = False
 
 def moveChef(app, dx, dy):
     newX, newY = app.chef1.x + dx*5, app.chef1.y + dy*5
@@ -161,7 +181,14 @@ def placeOnCounter(app):
         #             app.placedIngred.append((app.chef1.holding, ingredX, ingredY))
         #             app.chef1.holding = None
 
+#modify to check range of diffrent objects
 def inRange(app, chef, box):
+    if isinstance(box, ingredient.Plate):
+        if ((box.x-box.r <= chef.x <= box.x+box.r and chef.y+chef.r == box.y-app.boxSize/2) or
+                box.y-box.r <= chef.y <= box.y+box.r and chef.x+chef.r == box.x-app.boxSize/2):
+            return True #add to ranges, right now only accounts for plates at bottom and right counter
+        else:
+            return False
     if ((chef.x-chef.r == box.x1 or chef.x+chef.r == box.x0)
             and box.y0 <= chef.y <= box.y1):
         return True #left and right side of counter
@@ -173,7 +200,7 @@ def inRange(app, chef, box):
 
 def redrawAll(app, canvas):
     #prints order
-    if not app.orderDone:
+    if not app.order1.orderDone:
         canvas.create_text(70, 50, text='order: '+str(app.order1))
     #draws counter
     canvas.create_rectangle(app.counterX0, app.counterY0, app.counterX1, app.counterY1)
@@ -197,6 +224,12 @@ def redrawAll(app, canvas):
     #draw order box
     canvas.create_rectangle(app.orderBox.x0, app.orderBox.y0, app.orderBox.x1, app.orderBox.y1)
     canvas.create_text(app.orderBox.x0+app.boxSize/2, app.orderBox.y0+app.boxSize/2, text='orders')
+    #draws sink
+    canvas.create_rectangle(app.sink.x0, app.sink.y0, app.sink.x1, app.sink.y1)
+    canvas.create_text(app.sink.x0+app.boxSize/2, app.sink.y0+app.boxSize/2, text='sink')
+    #draws plates
+    canvas.create_oval(app.plate.x-app.plate.r, app.plate.y-app.plate.r, app.plate.x+app.plate.r, app.plate.y+app.plate.r)
+    canvas.create_text(app.plate.x, app.plate.y, text='clean plates')
     #draws chef
     canvas.create_oval(app.chef1.x-app.chef1.r, app.chef1.y-app.chef1.r,
                 app.chef1.x+app.chef1.r, app.chef1.y+app.chef1.r)
@@ -208,5 +241,9 @@ def redrawAll(app, canvas):
         ingredX, ingredY = ingred[1], ingred[2]
         name = ingred[0]
         canvas.create_text(ingredX, ingredY, text=name)
+    #draws dirty plates
+    for plate in app.dirtyPlates:
+        canvas.create_oval(plate.x-plate.r, plate.y-plate.r, plate.x+plate.r, plate.y+plate.r)
+        canvas.create_text(plate.x, plate.y, text='dirty plates')
     
 runApp(width=800, height=600)
