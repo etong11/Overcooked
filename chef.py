@@ -1,10 +1,10 @@
 import ingredient
 
 class Chef:
-    def __init__(self, player, x, y, radius):
+    def __init__(self, player, cx, cy, radius):
         #designate as player 0 or 1
         self.player = player
-        self.x, self.y = x, y
+        self.cx, self.cy = cx, cy
         self.r = radius
         self.holding = None #will hold item, can only hold 1 at a time
     
@@ -35,4 +35,11 @@ class Chef:
     
     def killRat(self, rat):
         rat.dead = True
-    
+
+    #remove from main
+    def pickUp(self, item):
+        pass #check if holding anything
+
+    def drawChef(self, canvas):
+        pass
+

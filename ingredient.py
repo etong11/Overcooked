@@ -4,6 +4,7 @@ class Ingredient:
     def __init__(self, type):
         self.type = type #str
         self.isRaw = True
+        self.box = None #if on box, this = to box obj
     
     def __repr__(self):
         return self.type
@@ -31,7 +32,12 @@ class Veggie(Ingredient):
             return True
         else:
             return False
+    
+    #chef also has chop method
+    def chop(self):
+        self.isChopped = True
 
+#inherit from Veggie
 class Meat(Ingredient):
     def __init__(self, type):
         super().__init__(type)
@@ -55,6 +61,14 @@ class Meat(Ingredient):
             return True
         else:
             return False
+
+    #chef also has chop method, copy of veggie method
+    def chop(self):
+        self.isChopped = True
+    
+    #chef also has chop method
+    def cook(self):
+        self.isCooked = True
 
 class Burger:
     def __init__(self, ingredients):
@@ -86,7 +100,7 @@ class Order:
     def __init__(self):
         #add randomized order later
         #add bread (currently doesn't work)
-        tomato, lettuce, meat = Veggie('tomato'), Veggie('lettuce'), Meat('meat')
+        tomato, lettuce, meat, bread = Veggie('tomato'), Veggie('lettuce'), Meat('meat'), Ingredient('bread')
         tomato.isChopped = True
         lettuce.isChopped = True
         meat.isChopped = True
@@ -97,6 +111,11 @@ class Order:
         self.orderDone = False
         self.orderTime = 15 #modify based on recipe difficulty
         self.orderFailed = False
+
+        # #randomized order:
+        # choices = [tomato, lettuce, (tomato, lettuce)]
+        # choice = random.choice(choices)
+        # self.order = Burger([bread, meat, choice])
     
     def __repr__(self):
         descrip = ''
