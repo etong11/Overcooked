@@ -1,14 +1,19 @@
 class Box:
-    #change so can be a rect?
     #add name argument, default is counter, override if do inheritance
-    def __init__(self, ingredient, x0, y0, size):
-        self.ingredient = ingredient
+    def __init__(self, x0, y0, size):
         #box is a square
         self.size = size
         self.x0 = x0
         self.x1 = x0+size
         self.y0 = y0
         self.y1 = y0+size
+    
+    def __eq__(self, other):
+        if (isinstance(other, Box) and self.x0 == other.x0 and self.x1 == other.x1
+            and self.y0 == other.y0 and self.y1 == other.y1):
+            return True
+        else:
+            return False
     
     #Given the center coordinates of a chef, returns whether if chef is within box bounds
     def withinBox(self, chef):
@@ -21,11 +26,28 @@ class Box:
         else:
             return False
 
-    def getIngredient(self):
-        return self.ingredient
-
     def getRange(self):
         return self.x0, self.y0, self.x1, self.y1
+
+class Counter(Box):
+    def __init__(self, x0, y0, size, ingredient):
+        super().__init__(x0, y0, size)
+        self.ingredient = ingredient
+
+    def hasIngredient(self):
+        if self.ingredient != None: return True
+        else: return False
+
+    def getIngredient(self):
+        return self.ingredient
+    
+    def removeIngredient(self):
+        self.ingredient = None
+
+class Appliance(Box):
+    def __init__(self, x0, y0, size, action):
+        super().__init__(x0, y0, size)
+        self.action = action
 
 #improve OOP with redrawAll, etc.
 #implement buttons

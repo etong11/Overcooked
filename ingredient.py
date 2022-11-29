@@ -1,9 +1,14 @@
 import random
+from cmu_112_graphics import *
 
 class Ingredient:
-    def __init__(self, type):
+    def __init__(self, type, app):
         self.type = type #str
-        self.isRaw = True
+        if type == 'bread':
+            self.isRaw = False
+            self.image = app.loadImage('bread.png')
+        else:
+            self.isRaw = True
         self.box = None #if on box, this = to box obj
     
     def __repr__(self):
@@ -14,11 +19,20 @@ class Ingredient:
             return True
         else:
             return False
+    
+    # def drawIngredient(self, app, canvas):
+    #     image = app.loadImage(self.image)
+    #     canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef))
 
 class Veggie(Ingredient):
-    def __init__(self, type):
-        super().__init__(type)
+    def __init__(self, type, app):
+        super().__init__(type, app)
         self.isChopped = False
+        self.app = app
+        if type == 'tomato':
+            self.image = app.loadImage('tomato.png')
+        elif type == 'lettuce':
+            self.image = app.loadImage('lettuce.png')
 
     def __repr__(self):
         chopped = ''
@@ -36,13 +50,20 @@ class Veggie(Ingredient):
     #chef also has chop method
     def chop(self):
         self.isChopped = True
+        self.isRaw = False
+        if self.type == 'lettuce':
+            self.image = self.app.loadImage('chopped_lettuce.png')
+        elif self.type == 'tomato':
+            self.image = self.app.loadImage('chopped_tomato.png')
 
 #inherit from Veggie
 class Meat(Ingredient):
-    def __init__(self, type):
-        super().__init__(type)
+    def __init__(self, type, app):
+        super().__init__(type, app)
         self.isChopped = False
         self.isCooked = False
+        self.app = app
+        self.image = app.loadImage('meat.png')
     
     def __repr__(self):
         chopped = ''
@@ -65,16 +86,24 @@ class Meat(Ingredient):
     #chef also has chop method, copy of veggie method
     def chop(self):
         self.isChopped = True
+        self.image = self.app.loadImage('chopped_meat.png')
     
     #chef also has chop method
     def cook(self):
         self.isCooked = True
+        self.isRaw = False
+        self.image = self.app.loadImage('cooked_meat.png')
 
 class Burger:
-    def __init__(self, ingredients):
+    def __init__(self, ingredients, app):
         #ingredients is a set of the ingredient obj in burger
         self.ingredients = ingredients
+        #sort code taken from https://www.techiedelight.com/sort-list-of-objects-python/
+        # print('unsorted', self.ingredients)
+        self.ingredients.sort(key=lambda x: x.type)
+        # print('sorted', self.ingredients)
         self.plate = None
+        self.image = app.loadImage('burger.png')
     
     def __repr__(self):
         name = ''
@@ -91,32 +120,47 @@ class Burger:
             return False
     
     def addIngred(self, ingred):
-        self.ingredients.add(str(ingred))
+        if isinstance(ingred, Burger):
+            for item in ingred.ingredients:
+                self.ingredients.add(item)
+        else: #is not a Burger
+            self.ingredients.add(ingred)
+        #sort code taken from https://www.techiedelight.com/sort-list-of-objects-python/
+        self.ingredients.sort(key=lambda x: x.type)
     
     def plateBurger(self, plate):
         self.plate = plate # plate object
 
 class Order:
-    def __init__(self):
+    def __init__(self, app):
         #add randomized order later
         #add bread (currently doesn't work)
-        tomato, lettuce, meat, bread = Veggie('tomato'), Veggie('lettuce'), Meat('meat'), Ingredient('bread')
+        tomato, lettuce, meat, bread = Veggie('tomato', app), Veggie('lettuce', app), Meat('meat', app), Ingredient('bread', app)
         tomato.isChopped = True
         lettuce.isChopped = True
         meat.isChopped = True
         meat.isCooked = True
         #look into making classes immutable -> error: can't put mutable obj in set
-        ingredients = {str(lettuce), str(tomato)}
-        self.order = Burger(ingredients) #burger with specific ingredients
+        ingredients = [tomato, lettuce]
+        self.order = Burger(ingredients, app) #burger with specific ingredients
         self.orderDone = False
-        self.orderTime = 15 #modify based on recipe difficulty
+        self.totalTime = 35
+        self.orderTime = self.totalTime #modify based on recipe difficulty
         self.orderFailed = False
 
-        # #randomized order:
-        # choices = [tomato, lettuce, (tomato, lettuce)]
-        # choice = random.choice(choices)
-        # self.order = Burger([bread, meat, choice])
-    
+        #randomized order:
+        choices = [tomato, lettuce, (tomato, lettuce)]
+        item = random.choice(choices)
+        if isinstance(item, tuple):
+            self.order = Burger([bread, meat]+list(item), app)
+            self.image = app.loadImage('order3.png')
+        else:
+            self.order = Burger([bread, meat, item], app)
+            if item.type == 'tomato':
+                self.image = app.loadImage('order2.png')
+            else:
+                self.image = app.loadImage('order1.png')
+
     def __repr__(self):
         descrip = ''
         for ingred in self.order.ingredients:
