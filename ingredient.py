@@ -115,6 +115,8 @@ class Burger:
     
     def __eq__(self, other):
         if isinstance(other, Burger) and self.ingredients == other.ingredients:
+            print('self', self.ingredients)
+            print('other', other.ingredients)
             return True
         else:
             return False
@@ -122,9 +124,9 @@ class Burger:
     def addIngred(self, ingred):
         if isinstance(ingred, Burger):
             for item in ingred.ingredients:
-                self.ingredients.add(item)
+                self.ingredients.append(item)
         else: #is not a Burger
-            self.ingredients.add(ingred)
+            self.ingredients.append(ingred)
         #sort code taken from https://www.techiedelight.com/sort-list-of-objects-python/
         self.ingredients.sort(key=lambda x: x.type)
     
@@ -144,7 +146,7 @@ class Order:
         ingredients = [tomato, lettuce]
         self.order = Burger(ingredients, app) #burger with specific ingredients
         self.orderDone = False
-        self.totalTime = 35
+        self.totalTime = 50
         self.orderTime = self.totalTime #modify based on recipe difficulty
         self.orderFailed = False
 
@@ -180,11 +182,10 @@ class Order:
             self.orderFailed = True
 
 class Plate:
-    def __init__(self, meal, x, y):
+    def __init__(self, meal, app):
         self.meal = meal
         self.clean = True
-        self.r = 20
-        self.x, self.y = x, y #center coords
+        self.image = app.loadImage('plate.png')
     
     def __repr__(self):
         descrip = ''

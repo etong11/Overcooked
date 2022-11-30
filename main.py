@@ -9,28 +9,16 @@ from box import *
 from rat import *
 
 #Overchefed
-#images drawn by me (except chef image - credit to Amy Xu)
-
-#################################################
-# Helper functions from 
-# https://www.cs.cmu.edu/~112/notes/notes-variables-and-functions.html#RecommendedFunctions
-#################################################
-def almostEqual(d1, d2, epsilon=10**-7):
-    return (abs(d2 - d1) < epsilon)
-
-def roundHalfUp(d):
-    # Round to nearest with ties going away from zero.
-    rounding = decimal.ROUND_HALF_UP
-    return int(decimal.Decimal(d).to_integral_value(rounding=rounding))
-#################################################
+#images drawn by me (except chef image - credit to Amy Xu, except rat image - https://www.pixilart.com/draw/big-ear-rat-9b1f2c785eb607a
 
 def appStarted(app):
     #images
     app.background = app.loadImage('background.png')
     # app.background = app.scaleImage(app.background, 3)
-    print(app.background.size)
+    # print(app.background.size)
     app.chef = app.loadImage('chef.png')
-    print(app.chef.size)
+    # print(app.chef.size)
+    app.ratImage = app.loadImage('rat.png')
 
     #note: each box is 16x16 pixels (*3 because image expanded to 300%)
     app.chef1 = Chef(1, app.width/2, app.height/2, 24, app)
@@ -67,18 +55,24 @@ def appStarted(app):
     # print(app.order.size)
 
     app.specialBoxes = app.chopBoards + app.stoves + app.boxes + [app.sink, app.trash, app.orderBox, app.orderBox2]
-    # plateX, plateY = app.counterX1*(2/3), app.counterY1+app.boxSize/2
-    # #change to a list, also show on screen how many plates left (if stacked)
-    # app.plate = Plate(None, plateX, plateY)
-    app.dirtyPlates = []
+    # app.plate = Plate(None, app)
+    # app.plate2, app.plate3 = copy.copy(app.plate), copy.copy(app.plate)
+    # app.plates = [app.plate, app.plate2, app.plate3]
+    # for plateIndex in range(len(app.plates)):
+    #     app.usedCounters.append(Counter(app.width-16*3*(3+plateIndex), app.counterY1, app.boxSize))
+
+    # app.dirtyPlates = []
     app.time = 0
     app.timerDelay = 1000
     app.paused = False
     app.score = 0
 
     app.rat = None
+    app.gameOver = False
 
 def keyPressed(app, event):
+    if app.gameOver:
+        return
     if event.key == 'w':
         moveChef(app, 0, -1)
     elif event.key == 'a':
@@ -101,7 +95,7 @@ def keyPressed(app, event):
                     app.chef1.holding = copy.copy(box.ingredient)                
             count = 0
             while count < len(app.usedCounters):
-                counter = app.usedCounters[0]
+                counter = app.usedCounters[count]
                 if counter.withinBox(app.chef1):
                     app.chef1.holding = counter.ingredient
                     app.usedCounters.pop(count)
@@ -117,14 +111,11 @@ def keyPressed(app, event):
                 for order in app.orders:
                     if app.chef1.holding == order.order:
                     # and app.chef1.holding.plate != None):
-                #change equality statement
-                        print('order is valid')
                         app.chef1.serve(order)
-                #check if always valid
                         app.score += 1
-            elif (app.sink.withinBox(app.chef1) and isinstance(app.chef1.holding, Plate)
-                    and not app.chef1.holding.clean):
-                app.chef1.holding.clean = True
+            # elif (app.sink.withinBox(app.chef1) and isinstance(app.chef1.holding, Plate)
+            #         and not app.chef1.holding.clean):
+            #     app.chef1.holding.clean = True
             elif (app.trash.withinBox(app.chef1)):
                 app.chef1.holding = None
             #checks counters, if can combine with ingred on counter, do so
@@ -143,7 +134,7 @@ def keyPressed(app, event):
                                 app.chef1.holding = None
                     elif (app.chef1.holding != None and not app.chef1.holding.isRaw): #cooked meat, chopped veggies, or bread
                         if isinstance(counterItem, Burger):
-                            if app.chef1.holding not in counterItem:
+                            if app.chef1.holding not in counterItem.ingredients:
                                 counter.ingredient.addIngred(app.chef1.holding)
                                 app.chef1.holding = None
                         else: #Veggie, Meat, Bread on counter
@@ -165,7 +156,6 @@ def keyPressed(app, event):
                 elif chefy1 == app.counterY1:
                     x0, y0 = (app.chef1.cx//(16*3))*16*3, app.counterY1
                 #if at edge of empty counter, place item down
-                #CANNOT BE WITHIN BOUNDS OF OTHER SPECIAL COUNTERS
                 if x0+y0 != 0:
                     newCounter = Counter(x0, y0, app.boxSize, app.chef1.holding)
                     isValid = True
@@ -189,6 +179,8 @@ def keyPressed(app, event):
         app.paused = not app.paused
 
 def timerFired(app):
+    if app.gameOver:
+        return
     if not app.paused:
         app.time += 1
     #prevent indexing error if no orders
@@ -209,23 +201,31 @@ def timerFired(app):
                 app.orders.pop(orderNum) #remove order w/o rewarding points
             else:
                 orderNum += 1
-    if 0 <= app.time%10 <= 2 and app.placedIngred != [] and app.rat == None:
+    if 0 <= app.time%10 <= 2 and app.usedCounters != [] and app.rat == None:
         spawnRat(app)
     if app.rat != None:
         #increase speed
         app.rat.grabFood()
         if app.rat.hasFood:
-            app.placedIngred.remove(app.rat.target)
+            print('has food')
+            app.usedCounters.remove(app.rat.target)
             app.rat = None
-        ingredMoved = True
-        for ingred in app.placedIngred:
-            if ingred == app.rat.target:
-                ingredMoved = False
-        if ingredMoved:
-            app.rat.dead = True
-            app.rat = None
-    if app.time == 1000:
-        app.time = 0
+        else:
+            ingredMoved = True
+            for counter in app.usedCounters:
+                if counter == app.rat.target:
+                    ingredMoved = False
+            if ingredMoved:
+                app.rat.dead = True
+                app.rat = None
+    # if app.time == 1000:
+    #     app.time = 0
+    
+    if app.time == 125:
+        app.gameOver = True
+    # print('counter', end=' ')
+    # for counter in app.usedCounters:
+    #     print(counter.ingredient, end='WHY')
 
 def moveChef(app, dx, dy):
     #moves by 1 pixel which = 3
@@ -236,85 +236,10 @@ def moveChef(app, dx, dy):
         app.counterY1 >= (newY + app.chef1.r)):
         app.chef1.cx, app.chef1.cy = newX, newY
 
-#Note: fix so holding a raw/raw on counter will not do anything
-#picks up ingredient on table
-# if chef is holding another ingredient and the two can be combined, combines them to make a burger
-def pickUp(app):
-    otherIngred = None
-    #change so that if already in burger, ingredient can't be combined
-    # if (isinstance(app.chef1.holding, Burger) or 
-    #     isinstance(app.chef1.holding, Ingredient) and not app.chef1.holding.isRaw):
-    if ((isinstance(app.chef1.holding, Veggie) and app.chef1.holding.isChopped)
-            or (isinstance(app.chef1.holding, Meat) and app.chef1.holding.isCooked)
-            or isinstance(app.chef1.holding, Burger)):
-        otherIngred = app.chef1.holding
-    count = 0
-    while count < len(app.placedIngred):
-        ingred = app.placedIngred[count]
-        if (((ingred[1]+app.boxSize/2 == app.chef1.cx-app.chef1.r or 
-                ingred[1]-app.boxSize/2 == app.chef1.cx+app.chef1.r) and 
-                ingred[2]-5 <= app.chef1.cy <= ingred[2]+5) or 
-                ((ingred[2]+app.boxSize/2 == app.chef1.cy-app.chef1.r or
-                ingred[2]-app.boxSize/2 == app.chef1.cy+app.chef1.r) and
-                ingred[1]-5 <= app.chef1.cx <= ingred[1]+5)):
-            #item is within chef range on left, right, top, or bottom counter (with leniance)
-            # not ((not isinstance(app.chef1.holding, Burger) and app.chef1.holding.isRaw)
-            #         or (isinstance(app.chef1.holding, Burger) and ingred[0].isRaw))
-            app.placedIngred.pop(count)
-            app.chef1.holding = ingred[0]
-        else:
-            count += 1
-    #combines the two ingred/burgers -> burger
-    if otherIngred != None:
-        if (isinstance(app.chef1.holding, Burger) and 
-                isinstance(otherIngred, Burger)):
-            for ingred in otherIngred.ingredients:
-                app.chef1.holding.addIngred(ingred)
-        elif isinstance(app.chef1.holding, Burger):
-            app.chef1.holding.addIngred(otherIngred)
-        elif isinstance(otherIngred, Burger):
-            app.chef1.holding = otherIngred.addIngred(app.chef1.holding)
-        else: #neither are burgers
-            app.chef1.holding = Burger(app.chef1.holding, otherIngred)
-
-def placeOnCounter(app):
-    ingredX, ingredY = 0, 0
-    #checks if within counter ranges
-    if app.counterX0 == app.chef1.cx-app.chef1.r:
-        #left
-        ingredX, ingredY = app.counterX0-app.boxSize/2, app.chef1.cy
-    elif app.counterX1 == app.chef1.cx+app.chef1.r:
-        #right
-        ingredX, ingredY = app.counterX1+app.boxSize/2, app.chef1.cy
-    elif app.counterY0 == app.chef1.cy-app.chef1.r:
-        #up
-        ingredX, ingredY = app.chef1.cx, app.counterY0-app.boxSize/2
-    elif app.counterY1 == app.chef1.cy+app.chef1.r:
-        #down
-        ingredX, ingredY = app.chef1.cx, app.counterY1+app.boxSize/2
-    if ingredX != 0 and ingredY != 0:
-        # if app.placedIngred == []:
-        app.placedIngred.append((app.chef1.holding, ingredX, ingredY))
-        app.chef1.holding = None
-        # else:
-        #     for ingred in app.placedIngred:
-        #         if not (ingred[1]-5 <= ingredX <= ingred[1] + 5 and ingred[2]-5 <= ingredY <= ingred[2]+5):
-        #             app.placedIngred.append((app.chef1.holding, ingredX, ingredY))
-        #             app.chef1.holding = None
-
-# def inRange(app, chef, box):
-    # if isinstance(box, Plate):
-    #     if ((box.x-box.r <= chef.cx <= box.x+box.r and chef.cy+chef.r == box.y-app.boxSize/2) or
-    #             box.y-box.r <= chef.cy <= box.y+box.r and chef.cx+chef.r == box.x-app.boxSize/2):
-    #         return True #add to ranges, right now only accounts for plates at bottom and right counter
-    #     else:
-    #         return False
-
 #spawns in a rat with a given target
 def spawnRat(app):
-    target = app.placedIngred[0] #change so ingred obj has x, y
-    targetX, targetY = target[1], target[2]
-    app.rat = Rat(app, target, targetX, targetY)
+    target = app.usedCounters[0]
+    app.rat = Rat(app, target)
 
 def redrawAll(app, canvas):
     bgCenterX, bgCenterY = app.width/2, app.height-app.background.size[1]/2
@@ -332,37 +257,43 @@ def redrawAll(app, canvas):
         canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.image))
     #shows score
     canvas.create_text(16*3, app.height-16*3/2, text=f'Score: {app.score}', fill='white', font='Arial 13 bold')
+    canvas.create_text(app.width-16*3, app.height-16*3/2, text=f'Time: {app.time}', fill='white', font='Arial 13 bold')
+    canvas.create_text(app.width/2, app.height-16*3/2, text=f'Holding: {app.chef1.holding}', fill='white', font='Arial 9 bold')
     #draw order box
-    canvas.create_rectangle(app.orderBox.x0, app.orderBox.y0, app.orderBox.x1, app.orderBox.y1)
-    canvas.create_text(app.orderBox.x0+app.boxSize/2, app.orderBox.y0+app.boxSize/2, text='orders')
+    # canvas.create_rectangle(app.orderBox.x0, app.orderBox.y0, app.orderBox.x1, app.orderBox.y1)
+    # canvas.create_text(app.orderBox.x0+app.boxSize/2, app.orderBox.y0+app.boxSize/2, text='orders')
     #draws plates
     # canvas.create_oval(app.plate.x-app.plate.r, app.plate.y-app.plate.r, app.plate.x+app.plate.r, app.plate.y+app.plate.r)
     # canvas.create_text(app.plate.x, app.plate.y, text='clean plates')
     #draws chef
-    canvas.create_oval(app.chef1.cx-app.chef1.r, app.chef1.cy-app.chef1.r,
-                app.chef1.cx+app.chef1.r, app.chef1.cy+app.chef1.r)
+    # canvas.create_oval(app.chef1.cx-app.chef1.r, app.chef1.cy-app.chef1.r,
+    #             app.chef1.cx+app.chef1.r, app.chef1.cy+app.chef1.r)
     #shows what is on the counters
     # for ingred in app.placedIngred:
     #     ingredX, ingredY = ingred[1], ingred[2]
     #     name = ingred[0]
     #     canvas.create_text(ingredX, ingredY, text=name)
     for counter in app.usedCounters:
-        canvas.create_text(counter.x0+24, counter.y0+24, text=str(counter.ingredient))
         cx, cy = counter.x0+app.boxSize/2, counter.y0+app.boxSize/2
         canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.image))
+        canvas.create_text(counter.x0+24, counter.y0+24, text=str(counter.ingredient), font='Arial 9 bold', fill='white')
     #draws dirty plates
-    for plate in app.dirtyPlates:
-        canvas.create_oval(plate.x-plate.r, plate.y-plate.r, plate.x+plate.r, plate.y+plate.r)
-        canvas.create_text(plate.x, plate.y, text='dirty plates')
+    # for plate in app.dirtyPlates:
+    #     canvas.create_oval(plate.x-plate.r, plate.y-plate.r, plate.x+plate.r, plate.y+plate.r)
+    #     canvas.create_text(plate.x, plate.y, text='dirty plates')
     #draw rat
     if app.rat != None and not app.rat.dead:
-        r = 30
-        canvas.create_oval(app.rat.x-r, app.rat.y-r, app.rat.x+r, app.rat.y+r)
-        canvas.create_text(app.rat.x, app.rat.y, text=app.rat)
+        # r = 16*3/2
+        canvas.create_image(app.rat.moveX+app.boxSize/2, app.rat.moveY+app.boxSize/2, image=ImageTk.PhotoImage(app.ratImage))
+        # canvas.create_oval(app.rat.moveX, app.rat.moveY, app.rat.moveX+app.boxSize, app.rat.moveY+app.boxSize)
+        # canvas.create_text(app.rat.moveX, app.rat.moveY, text=app.rat)
     
     # canvas.create_line(16*3, 0, 16*3, 600, fill='red')
     # canvas.create_line(32*3, 0, 32*3, 600, fill='red')
     # canvas.create_line(0, 48*3, 700, 48*3, fill='red')
+
+    if app.gameOver:
+        canvas.create_text(app.width/2, app.height/2, text='game over', font='Arial 20 bold')
 
 
 runApp(width=720, height=528+32*3)
