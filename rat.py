@@ -18,10 +18,10 @@ class Rat:
     #change so that x,y are cells
     def __init__(self, app, target):
         self.bounds = [app.counterX0, app.counterY0, app.counterX1, app.counterY1]
-        self.rows, self.cols = 7, 13 #change to not include counters (target is cell in front of food)
+        self.rows, self.cols = 8, 13 #change to not include counters (target is cell in front of food)
         self.x, self.y = random.randint(0, self.cols-1), random.randint(0, self.rows-1)
         self.target = target #targets a counter with food on it
-        self.targetX, self.targetY = int(target.x0//(16*3)-1), int(target.y0//(16*3)-5) #cols, rows Note: -5 may be 1 off
+        self.targetX, self.targetY = int(target.x0//(16*3)-1), int(target.y0//(16*3)-4) #cols, rows
         self.dead = False
         self.hasFood = False
         print('target', self.targetX, self.targetY)
@@ -63,26 +63,12 @@ class Rat:
                     self.hasFood = True
                     print('rat has food', self.hasFood)
 
-    
     #converts the coordinates used in the board to pixels on actual map
     def convertToPixels(self, row, col):
-        x, y = (col+1)*16*3, (row+5)*16*3
+        x, y = (col+1)*16*3, (row+4)*16*3
         return x, y
 
-    def moveRat(self):
-        #change complexity of path
-        #move towards target and grab food
-        # if self.x < self.targetX:
-        #     self.x += 1
-        # elif self.x > self.targetX:
-        #     self.x -= 1
-        # if self.y < self.targetY:
-        #     self.y += 1
-        # elif self.y > self.targetY:
-        #     self.y -= 1
-        pass
-
-    #if move food, change target to next food on counter, otherwise have rat :man_standing:
+    #to implement: if move food, change target to next food on counter
 
 #Code below copied from https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
 class Node():

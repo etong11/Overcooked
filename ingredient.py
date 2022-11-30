@@ -146,9 +146,8 @@ class Order:
         ingredients = [tomato, lettuce]
         self.order = Burger(ingredients, app) #burger with specific ingredients
         self.orderDone = False
-        self.totalTime = 50
-        self.orderTime = self.totalTime #modify based on recipe difficulty
         self.orderFailed = False
+        self.orderDoubled = False
 
         #randomized order:
         choices = [tomato, lettuce, (tomato, lettuce)]
@@ -156,12 +155,17 @@ class Order:
         if isinstance(item, tuple):
             self.order = Burger([bread, meat]+list(item), app)
             self.image = app.loadImage('order3.png')
+            self.orderDoubled = True
+            self.totalTime = 60
         else:
+            self.totalTime = 50
             self.order = Burger([bread, meat, item], app)
             if item.type == 'tomato':
                 self.image = app.loadImage('order2.png')
             else:
                 self.image = app.loadImage('order1.png')
+        self.orderTime = self.totalTime
+
 
     def __repr__(self):
         descrip = ''

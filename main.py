@@ -9,10 +9,10 @@ from box import *
 from rat import *
 
 #Overchefed
-#images drawn by me (except chef image - credit to Amy Xu, except rat image - https://www.pixilart.com/draw/big-ear-rat-9b1f2c785eb607a
 
 def appStarted(app):
     #images
+    #images drawn by me (except chef image - credit to Amy Xu, except rat image - https://www.pixilart.com/draw/big-ear-rat-9b1f2c785eb607a
     app.background = app.loadImage('background.png')
     # app.background = app.scaleImage(app.background, 3)
     # print(app.background.size)
@@ -49,7 +49,7 @@ def appStarted(app):
     app.orders = [Order(app)]
     app.orderBox = Appliance(app.width-16*2*3, 16*7*3, app.boxSize, app.chef1.serve)
     app.orderBox2 = Appliance(app.width-16*2*3, 16*8*3, app.boxSize, app.chef1.serve)
-
+    app.maxScore = 0
     #makes orders identicals - fix
     # app.order = app.loadImage(app.orders[0].image)
     # print(app.order.size)
@@ -69,8 +69,20 @@ def appStarted(app):
 
     app.rat = None
     app.gameOver = False
+    app.mode = 'splashScreenMode'
 
-def keyPressed(app, event):
+# Splash Screen Mode
+def splashScreenMode_redrawAll(app, canvas):
+    canvas.create_text(app.width/2, app.height/4, text='Overcooked!')
+    canvas.create_text(app.width/2, app.height/2, text='Press any key to start')
+
+# Mode code based off of https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#usingModes
+# This method below was copied from the link
+def splashScreenMode_keyPressed(app, event):
+    app.mode = 'gameMode'
+
+# Game Mode
+def gameMode_keyPressed(app, event):
     if app.gameOver:
         return
     if event.key == 'w':
@@ -111,8 +123,11 @@ def keyPressed(app, event):
                 for order in app.orders:
                     if app.chef1.holding == order.order:
                     # and app.chef1.holding.plate != None):
+                        if order.orderDoubled:
+                            app.score += 2
+                        else:
+                            app.score += 1
                         app.chef1.serve(order)
-                        app.score += 1
             # elif (app.sink.withinBox(app.chef1) and isinstance(app.chef1.holding, Plate)
             #         and not app.chef1.holding.clean):
             #     app.chef1.holding.clean = True
@@ -178,7 +193,7 @@ def keyPressed(app, event):
     elif event.key == 'Escape':
         app.paused = not app.paused
 
-def timerFired(app):
+def gameMode_timerFired(app):
     if app.gameOver:
         return
     if not app.paused:
@@ -191,7 +206,12 @@ def timerFired(app):
         # app.dirtyPlates.append(newDirtyPlate)
         app.orders.pop(0)
     if app.time%10 == 0 and len(app.orders) <= 5: #sets a max of 5 orders at a time
-        app.orders.append(Order(app))
+        newOrder = Order(app)
+        app.orders.append(newOrder)
+        if newOrder.orderDoubled:
+            app.maxScore += 2
+        else:
+            app.maxScore += 1
     if app.orders != []:
         orderNum = 0
         while orderNum < len(app.orders):
@@ -206,6 +226,7 @@ def timerFired(app):
     if app.rat != None:
         #increase speed
         app.rat.grabFood()
+        #Note: may be buggy if pick up food right before rat gets to it
         if app.rat.hasFood:
             print('has food')
             app.usedCounters.remove(app.rat.target)
@@ -218,14 +239,10 @@ def timerFired(app):
             if ingredMoved:
                 app.rat.dead = True
                 app.rat = None
-    # if app.time == 1000:
-    #     app.time = 0
     
-    if app.time == 125:
+    #125
+    if app.time == 50:
         app.gameOver = True
-    # print('counter', end=' ')
-    # for counter in app.usedCounters:
-    #     print(counter.ingredient, end='WHY')
 
 def moveChef(app, dx, dy):
     #moves by 1 pixel which = 3
@@ -241,7 +258,7 @@ def spawnRat(app):
     target = app.usedCounters[0]
     app.rat = Rat(app, target)
 
-def redrawAll(app, canvas):
+def gameMode_redrawAll(app, canvas):
     bgCenterX, bgCenterY = app.width/2, app.height-app.background.size[1]/2
     canvas.create_image(bgCenterX, bgCenterY, image=ImageTk.PhotoImage(app.background))
     ord1X, ord1Y = 0, 0
@@ -293,7 +310,12 @@ def redrawAll(app, canvas):
     # canvas.create_line(0, 48*3, 700, 48*3, fill='red')
 
     if app.gameOver:
-        canvas.create_text(app.width/2, app.height/2, text='game over', font='Arial 20 bold')
+        canvas.create_text(app.width/2, app.height/4, text='game over', font='Arial 20 bold')
+        if app.score >= app.maxScore/3:
+            outcome = 'win'
+        else:
+            outcome = 'lose'
+        canvas.create_text(app.width/2, app.height/2, text=f'Your score was {app.score}. You {outcome}.', font='Arial 20 bold')
 
 
 runApp(width=720, height=528+32*3)
