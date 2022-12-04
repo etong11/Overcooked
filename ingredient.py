@@ -10,19 +10,19 @@ class Ingredient:
         else:
             self.isRaw = True
         self.box = None #if on box, this = to box obj
+        self.plate = None
     
     def __repr__(self):
-        return self.type
+        # descrip = 
+        # if self.plate != None:
+        #     descrip += str(self.plate)
+        return self.type.capitalize()
 
     def __eq__(self, other):
         if isinstance(other, Ingredient) and self.type == other.type:
             return True
         else:
             return False
-    
-    # def drawIngredient(self, app, canvas):
-    #     image = app.loadImage(self.image)
-    #     canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef))
 
 class Veggie(Ingredient):
     def __init__(self, type, app):
@@ -37,8 +37,8 @@ class Veggie(Ingredient):
     def __repr__(self):
         chopped = ''
         if self.isChopped:
-            chopped = 'chopped'
-        return self.type+'\n'+chopped
+            chopped = '(chopped)'
+        return self.type.capitalize()+' '+chopped
 
     def __eq__(self, other):
         if (isinstance(other, Veggie) and self.type == other.type 
@@ -69,10 +69,10 @@ class Meat(Ingredient):
         chopped = ''
         cooked = ''
         if self.isChopped:
-            chopped = 'chopped'
+            chopped = '(chopped)'
         if self.isCooked:
-            cooked = 'cooked'
-        return self.type+'\n'+chopped+cooked
+            cooked = '(cooked)'
+        return self.type.capitalize()+' '+chopped+cooked
     
     def __eq__(self, other):
         #possibly just str(self) == str(other) ???
@@ -99,18 +99,16 @@ class Burger:
         #ingredients is a set of the ingredient obj in burger
         self.ingredients = ingredients
         #sort code taken from https://www.techiedelight.com/sort-list-of-objects-python/
-        # print('unsorted', self.ingredients)
         self.ingredients.sort(key=lambda x: x.type)
-        # print('sorted', self.ingredients)
         self.plate = None
         self.image = app.loadImage('burger.png')
     
     def __repr__(self):
         name = ''
         for ingred in self.ingredients:
-            name += str(ingred)
-        if self.plate != None:
-            name += str(self.plate)
+            name += str(ingred) + ', '
+        if name.endswith(', '):
+            name = name[:len(name)-2]
         return name
     
     def __eq__(self, other):
@@ -129,20 +127,14 @@ class Burger:
             self.ingredients.append(ingred)
         #sort code taken from https://www.techiedelight.com/sort-list-of-objects-python/
         self.ingredients.sort(key=lambda x: x.type)
-    
-    def plateBurger(self, plate):
-        self.plate = plate # plate object
 
 class Order:
     def __init__(self, app):
-        #add randomized order later
-        #add bread (currently doesn't work)
         tomato, lettuce, meat, bread = Veggie('tomato', app), Veggie('lettuce', app), Meat('meat', app), Ingredient('bread', app)
         tomato.isChopped = True
         lettuce.isChopped = True
         meat.isChopped = True
         meat.isCooked = True
-        #look into making classes immutable -> error: can't put mutable obj in set
         ingredients = [tomato, lettuce]
         self.order = Burger(ingredients, app) #burger with specific ingredients
         self.orderDone = False
@@ -170,11 +162,11 @@ class Order:
     def __repr__(self):
         descrip = ''
         for ingred in self.order.ingredients:
-            descrip += str(ingred)
+            descrip += str(ingred) + ' '
         return descrip
 
     def completeOrder(self, target): #target is a burger obj
-        if self.order == target and target.plate != None:
+        if self.order == target:
             return True
         else:
             return False
@@ -186,20 +178,24 @@ class Order:
             self.orderFailed = True
 
 class Plate:
-    def __init__(self, meal, app):
-        self.meal = meal
-        self.clean = True
-        self.image = app.loadImage('plate.png')
-    
+    def __init__(self, app):
+        self.isDirty = False
+        self.app = app
+        self.image = self.app.loadImage('clean_plate.png')
+        self.counter = None
+
     def __repr__(self):
-        descrip = ''
-        if self.clean:
-            descrip += 'clean'
+        descrip = 'Plate'
+        if self.isDirty:
+            descrip += '(dirty)'
         else:
-            descrip += 'dirty'
-        descrip += 'plate'
+            descrip += '(clean)'
         return descrip
 
-    def plate(self, burger):
-        burger.plateBurger(self)
-        self.meal = burger
+    def makeDirty(self):
+        self.isDirty = True
+        self.image = self.app.loadImage('dirty_plate.png')
+    
+    def makeClean(self):
+        self.isDirty = False
+        self.image = self.app.loadImage('clean_plate.png')

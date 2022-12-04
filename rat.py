@@ -1,5 +1,6 @@
 import random
 import decimal
+import copy
 
 #################################################
 # Helper functions from 
@@ -27,18 +28,105 @@ class Rat:
         print('target', self.targetX, self.targetY)
         print('rat', self.x, self.y)
         self.moveX, self.moveY = self.convertToPixels(self.x, self.y)
+        self.image = app.loadImage('rat.png')
 
-        #code copied from https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2 
-        # but modified to fit game
-        ##############################################################
-        board = [[0]*self.cols for row in range(self.rows)]
-
+    ############################################################################
+    #A* algorithm logic taken from https://isaaccomputerscience.org/concepts/dsa_search_a_star?examBoard=all&stage=all
+    #Under section "A* algorithm - step-by-step
         self.start = (self.y, self.x)
-        end = (self.targetY, self.targetX)
+        self.end = (self.targetY, self.targetX)
+        startNode = Node(self.start, 0, self.findHScore(self.start), None)
+        self.unvisited = [startNode]
+        for row in range(self.rows):
+            for col in range(self.cols):
+                coords = (row, col)
+                node = Node(coords, 10**5, 10**5, None)
+                self.unvisited.append(node)
+        self.visited = []
 
-        self.path = astar(board, self.start, end)
-        print('new path', self.path)
-        ################################################################
+        foundPath = self.findPath()
+        if foundPath:
+            endNode = self.findNode(self.end)
+            self.path = self.makePath(endNode, [endNode])[::-1]
+        else:
+            self.path = None
+        print('path', self.path)
+
+    def findNeighbors(self, node):
+        neighbors = []
+        x, y = node.node[0], node.node[1]
+        for loc in [(0,1), (0,-1), (1,0), (-1,0)]:
+            drow, dcol = loc[0], loc[1]
+            neighbor = (x+drow, y+dcol)
+            if 0 <= neighbor[0] < self.rows and 0 <= neighbor[1] < self.cols:
+                isVisited = False
+                for node in self.visited:
+                    name = node.node
+                    if name == neighbor:
+                        isVisited = True
+                if not isVisited:
+                    neighbors.append(neighbor)
+        return neighbors
+
+    #given coord, find name in self.unvisited
+    def findNode(self, coord):
+        for node in self.unvisited:
+            name = node.node
+            if name == coord:
+                return node
+        return None
+
+    def findFScore(self, node):
+        x, y = node.node[0], node.node[1]
+        #Using forumla f(n) = g(n) + h(n)
+        g = node.g
+        #Uses Manhattan heuristic to calculate h, formula taken from https://brilliant.org/wiki/a-star-search/
+        h = abs(x-self.end[0]) + abs(y-self.end[1])
+        f = g + h
+        return f
+
+    #Uses Manhattan heuristic to calculate h, formula taken from https://brilliant.org/wiki/a-star-search/
+    def findHScore(self, coord):
+        x, y = coord[0], coord[1]
+        return abs(x-self.end[0]) + abs(y-self.end[1])
+    
+    def findMinFScore(self):
+        minScore = 10**5
+        minNode = None
+        for node in self.unvisited:
+            thisScore = self.findFScore(node)
+            if thisScore < minScore:
+                minScore = thisScore
+                minNode = node
+        return minNode
+
+    #Uses A*
+    def findPath(self):
+        currentNode = self.findMinFScore()
+        if currentNode.node == self.end:
+            return True
+        else:
+            neighbors = self.findNeighbors(currentNode)
+            for neighbor in neighbors:
+                node = self.findNode(neighbor)
+                newG = currentNode.g + 1
+                if newG < node.g:
+                    node.g = newG
+                    node.parent = currentNode
+                    node.f = self.findFScore(node)
+            self.visited.append(currentNode)
+            self.unvisited.remove(currentNode)
+            return self.findPath()
+
+    #After all nodes have been visited, makes list of path with nodes as elements using backtracking
+    def makePath(self, node, path):
+        if node.parent == None:
+            path.append(node)
+            return path
+        else:
+            path.append(node.parent)
+            return self.makePath(node.parent, path)
+    ############################################################################
 
     def __repr__(self):
         info = ''
@@ -53,7 +141,7 @@ class Rat:
         #code in speed of rat?
         if not self.dead and not self.hasFood:
             if self.path != None and len(self.path) > 0:
-                drow, dcol = self.path[0][0], self.path[0][1]
+                drow, dcol = self.path[0].node[0], self.path[0].node[1]
                 self.moveX, self.moveY = self.convertToPixels(drow, dcol)
                 self.start = self.path.pop(0)
                 print('move', self.moveX, self.moveY)
@@ -70,99 +158,12 @@ class Rat:
 
     #to implement: if move food, change target to next food on counter
 
-#Code below copied from https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
+#Node class - Idea to use a class came from https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2
+#To determine what parameters are passed, used logic from https://isaaccomputerscience.org/concepts/dsa_search_a_star?examBoard=all&stage=all
+#Under section "A* algorithm - step-by-step
 class Node():
-    """A node class for A* Pathfinding"""
-
-    def __init__(self, parent=None, position=None):
+    def __init__(self, coord, g, f, parent):
+        self.node = coord
+        self.g = g
+        self.f = f
         self.parent = parent
-        self.position = position
-
-        self.g = 0
-        self.h = 0
-        self.f = 0
-
-    def __eq__(self, other):
-        return self.position == other.position
-
-def astar(maze, start, end):
-    """Returns a list of tuples as a path from the given start to the given end in the given maze"""
-
-    # Create start and end node
-    start_node = Node(None, start)
-    start_node.g = start_node.h = start_node.f = 0
-    end_node = Node(None, end)
-    end_node.g = end_node.h = end_node.f = 0
-
-    # Initialize both open and closed list
-    open_list = []
-    closed_list = []
-
-    # Add the start node
-    open_list.append(start_node)
-
-    # Loop until you find the end
-    while len(open_list) > 0:
-
-        # Get the current node
-        current_node = open_list[0]
-        current_index = 0
-        for index, item in enumerate(open_list):
-            if item.f < current_node.f:
-                current_node = item
-                current_index = index
-
-        # Pop current off open list, add to closed list
-        open_list.pop(current_index)
-        closed_list.append(current_node)
-
-        # Found the goal
-        if current_node == end_node:
-            path = []
-            current = current_node
-            while current is not None:
-                path.append(current.position)
-                current = current.parent
-            return path[::-1] # Return reversed path
-
-        # Generate children
-        children = []
-        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]: # Adjacent squares
-
-            # Get node position
-            node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
-
-            # Make sure within range
-            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
-                continue
-
-            # Make sure walkable terrain
-            if maze[node_position[0]][node_position[1]] != 0:
-                continue
-
-            # Create new node
-            new_node = Node(current_node, node_position)
-
-            # Append
-            children.append(new_node)
-
-        # Loop through children
-        for child in children:
-
-            # Child is on the closed list
-            for closed_child in closed_list:
-                if child == closed_child:
-                    continue
-
-            # Create the f, g, and h values
-            child.g = current_node.g + 1
-            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
-            child.f = child.g + child.h
-
-            # Child is already in the open list
-            for open_node in open_list:
-                if child == open_node and child.g > open_node.g:
-                    continue
-
-            # Add the child to the open list
-            open_list.append(child)
