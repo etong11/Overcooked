@@ -142,7 +142,7 @@ def gameMode_keyPressed(app, event):
                 count = 0
                 while count < len(app.plateCounters):
                     counter = app.plateCounters[count]
-                    if counter.withinBox(app.chef1) and app.chef1.holding.plate == None:
+                    if counter.withinBox(app.chef1) and app.chef1.holding.plate == None and not counter.ingredient.isDirty:
                         app.chef1.holding.plate = counter.ingredient
                         app.plateCounters[count].ingredient = app.chef1.holding
                         newCounter = app.plateCounters.pop(count)
@@ -156,7 +156,7 @@ def gameMode_keyPressed(app, event):
                 if counter.withinBox(app.chef1) and not isinstance(counterItem, Plate) and app.chef1.holding != None and counterItem != None:
                     if isinstance(counterItem, Burger) or not counterItem.isRaw:
                         if isinstance(app.chef1.holding, Plate):
-                            if counterItem.plate != None:
+                            if counterItem.plate == None and not app.chef1.holding.isDirty:
                                 plate = app.chef1.holding.plate
                                 counter.ingredient.addIngred(app.chef1.holding)
                                 app.chef1.holding = None
