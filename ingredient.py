@@ -1,6 +1,7 @@
 import random
 from cmu_112_graphics import *
 
+#Image credit: all food images made by me
 class Ingredient:
     def __init__(self, type, app):
         self.type = type #str
@@ -30,9 +31,12 @@ class Veggie(Ingredient):
         self.isChopped = False
         self.app = app
         if type == 'tomato':
-            self.image = app.loadImage('tomato.png')
+            self.rawImage = app.loadImage('tomato.png')
+            self.choppedImage = app.loadImage('chopped_tomato.png')
         elif type == 'lettuce':
-            self.image = app.loadImage('lettuce.png')
+            self.rawImage = app.loadImage('lettuce.png')
+            self.choppedImage = app.loadImage('chopped_lettuce.png')
+        self.image = self.rawImage
 
     def __repr__(self):
         chopped = ''
@@ -51,10 +55,7 @@ class Veggie(Ingredient):
     def chop(self):
         self.isChopped = True
         self.isRaw = False
-        if self.type == 'lettuce':
-            self.image = self.app.loadImage('chopped_lettuce.png')
-        elif self.type == 'tomato':
-            self.image = self.app.loadImage('chopped_tomato.png')
+        self.image = self.choppedImage
 
 #inherit from Veggie
 class Meat(Ingredient):
@@ -63,7 +64,10 @@ class Meat(Ingredient):
         self.isChopped = False
         self.isCooked = False
         self.app = app
-        self.image = app.loadImage('meat.png')
+        self.rawImage = app.loadImage('meat.png')
+        self.choppedImage = app.loadImage('chopped_meat.png')
+        self.cookedImage = app.loadImage('cooked_meat.png')
+        self.image = self.rawImage
     
     def __repr__(self):
         chopped = ''
@@ -86,13 +90,13 @@ class Meat(Ingredient):
     #chef also has chop method, copy of veggie method
     def chop(self):
         self.isChopped = True
-        self.image = self.app.loadImage('chopped_meat.png')
+        self.image = self.choppedImage
     
     #chef also has chop method
     def cook(self):
         self.isCooked = True
         self.isRaw = False
-        self.image = self.app.loadImage('cooked_meat.png')
+        self.image = self.cookedImage
 
 class Burger:
     def __init__(self, ingredients, app):
@@ -101,7 +105,10 @@ class Burger:
         #sort code taken from https://www.techiedelight.com/sort-list-of-objects-python/
         self.ingredients.sort(key=lambda x: x.type)
         self.plate = None
-        self.image = app.loadImage('burger.png')
+        self.image = None
+        self.imageList = False
+        self.app = app
+        self.burgerImage(app)  
     
     def __repr__(self):
         name = ''
@@ -127,6 +134,35 @@ class Burger:
             self.ingredients.append(ingred)
         #sort code taken from https://www.techiedelight.com/sort-list-of-objects-python/
         self.ingredients.sort(key=lambda x: x.type)
+        self.burgerImage(self.app)
+
+    def hasIngredType(self, name):
+        for ingred in self.ingredients:
+            if ingred.type == name:
+                return True
+        return False
+    
+    def burgerImage(self, app):
+        if self.hasIngredType('bread'):
+            size = len(self.ingredients)
+            if size == 4:
+                self.image = app.loadImage('full_burg.png')
+            elif size == 3:
+                if self.hasIngredType('tomato') and self.hasIngredType('lettuce'):
+                    self.image = app.loadImage('tom_let_burg.png')
+                elif self.hasIngredType('tomato') and self.hasIngredType('meat'):
+                    self.image = app.loadImage('tomato_burg.png')
+                if self.hasIngredType('lettuce') and self.hasIngredType('meat'):
+                    self.image = app.loadImage('lettuce_burg.png')         
+            else:
+                if self.hasIngredType('tomato'):
+                    self.image = app.loadImage('tom_bread.png')
+                elif self.hasIngredType('lettuce'):
+                    self.image = app.loadImage('let_bread.png')
+                else:
+                    self.image = app.loadImage('plain_burg.png')
+        else:
+            self.imageList = True
 
 class Order:
     def __init__(self, app):
@@ -148,9 +184,9 @@ class Order:
             self.order = Burger([bread, meat]+list(item), app)
             self.image = app.loadImage('order3.png')
             self.orderDoubled = True
-            self.totalTime = 60
+            self.totalTime = 60*10
         else:
-            self.totalTime = 50
+            self.totalTime = 50*10
             self.order = Burger([bread, meat, item], app)
             if item.type == 'tomato':
                 self.image = app.loadImage('order2.png')
@@ -181,8 +217,10 @@ class Plate:
     def __init__(self, app):
         self.isDirty = False
         self.app = app
-        self.image = self.app.loadImage('clean_plate.png')
         self.counter = None
+        self.cleanImage = self.app.loadImage('clean_plate.png')
+        self.dirtyImage = self.app.loadImage('dirty_plate.png')
+        self.image = self.cleanImage
 
     def __repr__(self):
         descrip = 'Plate'
@@ -194,8 +232,8 @@ class Plate:
 
     def makeDirty(self):
         self.isDirty = True
-        self.image = self.app.loadImage('dirty_plate.png')
+        self.image = self.dirtyImage
     
     def makeClean(self):
         self.isDirty = False
-        self.image = self.app.loadImage('clean_plate.png')
+        self.image = self.cleanImage

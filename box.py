@@ -19,10 +19,12 @@ class Box:
     def withinBox(self, chef):
         #checks if obj is within box on the left or right
         if (chef.cx-chef.r == self.x1 or chef.cx+chef.r == self.x0) and self.y0 <= chef.cy <= self.y1:
-            return True
+            if chef.animationName in ['left', 'right']: #change if make rest position default
+                return True
         #checks if obj is within box on the top or bottom
         elif (chef.cy+chef.r == self.y0 or chef.cy-chef.r == self.y1) and self.x0 <= chef.cx <= self.x1:
-            return True
+            if chef.animationName in ['up', 'down', 'chop', 'cook']:
+                return True
         else:
             return False
 

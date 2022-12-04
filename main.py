@@ -9,12 +9,11 @@ from chef import *
 from box import *
 from rat import *
 
-#Overchefed
+#Title: Overcooked! - A Ratty Situation
 #Map size is 720x528 and is divided into 15x11 total boxes, each sized (16*3)x(16*3)
 
 def appStarted(app):
-    #images drawn by me (except chef image - credit to Amy Xu, except rat image - https://www.pixilart.com/draw/big-ear-rat-9b1f2c785eb607a
-    app.background = app.loadImage('background.png')
+    app.background = app.loadImage('background.png') #map drawn by me
     url = 'https://www.team17.com/wp-content/uploads/2020/08/Overcooked_iPad_Tile.jpg'
     app.homescreen = app.loadImage(url)
     app.homescreen = app.scaleImage(app.homescreen, 1/1.75)
@@ -52,7 +51,8 @@ def appStarted(app):
         Counter(app.width-16*3*3, app.height-16*2*3, app.boxSize, app.plates[2])]
     #other variables
     app.time = 0
-    app.timerDelay = 1000
+    app.timerDelay = 100
+    app.endTime = 65*10 #125
     app.paused = False
     app.score = 0
     app.maxScore = 0
@@ -77,12 +77,16 @@ def gameMode_keyPressed(app, event):
         return
     if event.key == 'w':
         app.chef1.move(app, 0, -1)
+        app.chef1.setAnimation('up')
     elif event.key == 'a':
         app.chef1.move(app, -1, 0)
+        app.chef1.setAnimation('left')
     elif event.key == 's':
         app.chef1.move(app, 0, +1)
+        app.chef1.setAnimation('down')
     elif event.key == 'd':
         app.chef1.move(app, +1, 0)
+        app.chef1.setAnimation('right')
     elif event.key == 'Space':
         if app.chef1.holding == None: #chef holding nothing
             #checks if in range of ingredient boxes
@@ -121,9 +125,7 @@ def gameMode_keyPressed(app, event):
                 else:
                     app.chef1.holding = None
             elif (app.sink.withinBox(app.chef1)):
-                print('within box')
                 if isinstance(app.chef1.holding, Plate):
-                    print('holding plate')
                     app.chef1.wash()
             #checks if in range of order box and can complete order
             elif (app.orderBox.withinBox(app.chef1) or app.orderBox2.withinBox(app.chef1)):
@@ -151,7 +153,7 @@ def gameMode_keyPressed(app, event):
             #checks counters, if can combine with ingred on counter, do so
             for counter in app.usedCounters:
                 counterItem = counter.ingredient
-                if counter.withinBox(app.chef1) and not isinstance(counterItem, Plate) and app.chef1.holding != None:
+                if counter.withinBox(app.chef1) and not isinstance(counterItem, Plate) and app.chef1.holding != None and counterItem != None:
                     if isinstance(counterItem, Burger) or not counterItem.isRaw:
                         if isinstance(app.chef1.holding, Plate):
                             if counterItem.plate != None:
@@ -236,17 +238,26 @@ def gameMode_keyPressed(app, event):
         app.paused = not app.paused
 
 def gameMode_timerFired(app):
+    # app.chef1.animation = []
+    # if app.chef1.animation != []:
+    if app.chef1.animationName in ['chop', 'cook']:
+        name = app.chef1.animationName
+        if app.chef1.counterDict[name] < len(app.chef1.animation):
+            app.chef1.counterDict[name] += 1
+        if app.chef1.counterDict[name] == len(app.chef1.animation):
+            app.chef1.animationName = 0
+            app.chef1.animation = []
+            app.chef1.counterDict[name] = 0
     if app.gameOver:
         return
     if not app.paused:
         app.time += 1
-    #125
-    # if app.time == 40:
-    #     app.gameOver = True
+    if app.time == app.endTime:
+        app.gameOver = True
     #prevent indexing error if no orders
     if app.orders != [] and app.orders[0].orderDone:
         app.orders.pop(0)
-    if app.time%10 == 0 and len(app.orders) <= 5: #sets a max of 5 orders at a time
+    if app.time%(10*15) == 0 and len(app.orders) <= 5: #sets a max of 5 orders at a time
         newOrder = Order(app)
         app.orders.append(newOrder)
         if newOrder.orderDoubled:
@@ -262,7 +273,7 @@ def gameMode_timerFired(app):
                 app.orders.pop(orderNum) #remove order w/o rewarding points
             else:
                 orderNum += 1
-    if 0 <= app.time%5 <= 2 and app.usedCounters != [] and app.rat == None:
+    if 0 <= app.time%(15*10) <= 2 and app.usedCounters != [] and app.rat == None:
         #spawns in a rat with a given target
         setTarget = False
         count = 0
@@ -271,11 +282,11 @@ def gameMode_timerFired(app):
             if target.ingredient.plate == None: #does not target items with a plate
                 setTarget = True
             count += 1
-        # if setTarget:
-        #     app.rat = Rat(app, target)
+        if setTarget:
+            app.rat = Rat(app, target)
     if app.rat != None:
-        #increase speed
-        app.rat.grabFood()
+        if app.time%5==0:
+            app.rat.grabFood()
         #Note: may be buggy if pick up food right before rat gets to it
         if app.rat.hasFood:
             # print('has food')
@@ -303,28 +314,58 @@ def gameMode_redrawAll(app, canvas):
             canvas.create_rectangle(ord1X, ord1Y+imageHeight, ord1X+imageWidth*order.orderTime/order.totalTime, ord1Y+imageHeight+16*3/2, fill='red')
             ord1X += imageWidth
     #draws chef
-    canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.image))
+    if app.chef1.animation == []:
+        canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.image))
+    else:
+        i = app.chef1.counterDict[app.chef1.animationName]
+        canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.animation[i]))
     #draws what chef is holding on top of chef
     if app.chef1.holding != None:
-        if isinstance(app.chef1.holding, Plate): 
-            canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.image))
-        elif app.chef1.holding.plate != None:
-            canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.plate.image))
-        canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.image))
+        if app.chef1.animationName == 'chop':
+            canvas.create_image(app.chef1.cx, app.chef1.cy+app.boxSize, image=ImageTk.PhotoImage(app.chef1.holding.rawImage))
+        elif app.chef1.animationName == 'cook':
+            if isinstance(app.chef1.holding, Plate): #washing
+                im = app.chef1.holding.dirtyImage
+            else: #cooking
+                im = app.chef1.holding.rawImage
+            canvas.create_image(app.chef1.cx, app.chef1.cy-app.boxSize, image=ImageTk.PhotoImage(im))
+        else:
+            if isinstance(app.chef1.holding, Plate): 
+                canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.image))
+            elif app.chef1.holding.plate != None:
+                canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.plate.image))
+            if isinstance(app.chef1.holding, Burger):
+                # app.chef1.holding.burgerImage(app)
+                if app.chef1.holding.imageList:
+                    for ingred in app.chef1.holding.ingredients:
+                        canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(ingred.image))
+                else:
+                    canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.image))
+            else:
+                canvas.create_image(app.chef1.cx, app.chef1.cy, image=ImageTk.PhotoImage(app.chef1.holding.image))
     #draws score, time, and what chef is holding at the bottom of the screen
     canvas.create_text(16*3, app.height-16*3/2, text=f'Score: {app.score}', fill='white', font='Arial 13 bold')
-    canvas.create_text(app.width-16*3, app.height-16*3/2, text=f'Time: {app.time}', fill='white', font='Arial 13 bold')
+    canvas.create_text(app.width-16*1.5*3, app.height-16*3/2, text=f'Time left: {(app.endTime-app.time)//10}', fill='white', font='Arial 13 bold')
     holdingText = str(app.chef1.holding)
     if app.chef1.holding != None and not isinstance(app.chef1.holding, Plate) and app.chef1.holding.plate != None:
         holdingText += " " + str(app.chef1.holding.plate)
     canvas.create_text(app.width/2, app.height-16*3/2, text=f'Holding: {holdingText}', fill='white', font='Arial 9 bold')
     #draws items on counters
     for counter in app.usedCounters:
-        cx, cy = counter.x0+app.boxSize/2, counter.y0+app.boxSize/2
-        if counter.ingredient.plate != None:
-            canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.plate.image))
-        canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.image))
-        canvas.create_text(counter.x0+24, counter.y0+24, text=str(counter.ingredient), font='Arial 9 bold', fill='white')
+        if counter.ingredient != None:
+            cx, cy = counter.x0+app.boxSize/2, counter.y0+app.boxSize/2
+            if counter.ingredient.plate != None:
+                canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.plate.image))
+            if isinstance(counter.ingredient, Burger):
+                # counter.ingredient.burgerImage(app)
+                if counter.ingredient.imageList:
+                    for ingred in counter.ingredient.ingredients:
+                        canvas.create_image(cx, cy, image=ImageTk.PhotoImage(ingred.image))
+                else:
+                    canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.image))
+            else:
+                canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.image))
+            # canvas.create_text(counter.x0+24, counter.y0+24, text=str(counter.ingredient), font='Arial 9 bold', fill='white')
     #draws plates
     for counter in app.plateCounters:
         cx, cy = counter.x0+app.boxSize/2, counter.y0+app.boxSize/2

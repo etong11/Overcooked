@@ -1,4 +1,5 @@
 import ingredient
+from cmu_112_graphics import *
 
 class Chef:
     def __init__(self, player, cx, cy, radius, app):
@@ -7,7 +8,33 @@ class Chef:
         self.cx, self.cy = cx, cy
         self.r = radius
         self.holding = None #will hold item, can only hold 1 at a time
+        
+        #Image credit: chef sprites all made by friend Amy Xu
         self.image = app.loadImage('chef.png')
+        self.animation = []
+        self.animationName = ''
+        self.animationDict = dict()
+        self.counterDict = dict()
+        animations = ['up', 'down', 'left', 'right', 'chop', 'cook']
+        #code for making animations from a sprite sheet modified from https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#spritesheetsWithCropping
+        for animation in animations:
+            isFlipped = False
+            if animation == 'right':
+                isFlipped = True
+                animation = 'left'
+            imageName = 'chef_' + animation + '.png'
+            spriteStrip = app.loadImage(imageName)
+            sprites = []
+            spriteLen = spriteStrip.size[0]//(16*3)
+            for i in range(spriteLen):
+                sprite = spriteStrip.crop((16*3*i, 0, 16*3*(i+1), 16*3))
+                if isFlipped:
+                    sprite = sprite.transpose(Image.FLIP_LEFT_RIGHT)
+                sprites.append(sprite)
+            if isFlipped:
+                animation = 'right'
+            self.animationDict[animation] = sprites
+            self.counterDict[animation] = 0
     
     def move(self, app, dx, dy):
         #moves by 1 pixel which = 3
@@ -18,17 +45,45 @@ class Chef:
             app.counterY1 >= (newY + self.r)):
             self.cx, self.cy = newX, newY
 
+    def setAnimation(self, name):
+        self.animation = self.animationDict[name]
+        if name != self.animationName:
+            self.counterDict[self.animationName] = 0
+            self.animationName = name
+        else:
+            self.counterDict[name] = (1+self.counterDict[name])%len(self.animation)
+        
+        # if self.animationName != name:
+        #     print('making sprites')
+        #     sprites = []
+        #     spriteStrip = None
+        #     if name == 'down':
+        #         spriteStrip = app.loadImage('chef_down.png')
+        #     if spriteStrip != None:
+        #         spriteLen = spriteStrip.size[0]/(16*3)
+        #         for i in range(spriteLen):
+        #             sprite = spriteStrip.crop((16*3*i, 0, 16*3*(i+1), 16*3))
+        #             sprites.append(sprite)
+        #     self.animation = sprites
+        #     self.spriteCounter = 0
+        #     self.animationName = name
+        # else:
+        #     print('not working')
+        #     self.spriteCounter = (1+self.spriteCounter)%len(self.animation)
+
     def chop(self):
         #add time to chopping
         if (isinstance(self.holding, ingredient.Veggie) or isinstance(self.holding, ingredient.Meat)
             and not self.holding.isChopped):
             self.holding.chop()
+            self.setAnimation('chop')
 
     def cook(self):
         #not cooked -> cooking -> cooked
         if (isinstance(self.holding, ingredient.Meat) and self.holding.isChopped 
             and not self.holding.isCooked):
             self.holding.cook()
+            self.setAnimation('cook')
 
     def serve(self, order):
         order.orderDone = True
@@ -41,6 +96,7 @@ class Chef:
     
     def wash(self):
         self.holding.makeClean()
+        self.setAnimation('cook')
     
     def discard(self):
         if self.holding != None:

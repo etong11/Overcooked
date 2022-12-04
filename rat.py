@@ -28,6 +28,7 @@ class Rat:
         print('target', self.targetX, self.targetY)
         print('rat', self.x, self.y)
         self.moveX, self.moveY = self.convertToPixels(self.x, self.y)
+        #Rat image credit: from https://www.pixilart.com/draw/big-ear-rat-9b1f2c785eb607a
         self.image = app.loadImage('rat.png')
 
     ############################################################################
