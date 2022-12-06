@@ -434,7 +434,7 @@ def setRatTarget(app):
             app.rat = Rat(app, target)
         else:
             # app.rat.resetPath()
-            y, x = app.rat.convertToListCoords(app.rat.moveX, app.rat.moveY)
+            x, y = app.rat.convertToRowCol(app.rat.moveX, app.rat.moveY)
             app.rat.generatePath(target, x, y)
 
 def gameMode_redrawAll(app, canvas):

@@ -30,16 +30,15 @@ class Rat:
         #Rat image credit: from https://www.pixilart.com/draw/big-ear-rat-9b1f2c785eb607a
         self.image = app.loadImage('rat.png')
         self.isFlipped = False
-        # self.stop = False
         self.generatePath(target, self.row, self.col)
 
     ############################################################################
     #A* algorithm logic taken from https://isaaccomputerscience.org/concepts/dsa_search_a_star?examBoard=all&stage=all
     #Under section "A* algorithm - step-by-step
-    def generatePath(self, target, startY, startX):
+    def generatePath(self, target, startRow, startCol):
         self.target = target #targets a counter with food on it
-        self.targetX, self.targetY = self.convertToListCoords(target.x0, target.y0)
-        self.start = (startY, startX)
+        self.targetX, self.targetY = self.convertToRowCol(target.x0, target.y0)
+        self.start = (startRow, startCol)
         self.end = (self.targetY, self.targetX)
 
         print('start', self.start)
@@ -195,8 +194,9 @@ class Rat:
         x, y = (col+1)*16*3, (row+4)*16*3
         return x, y
     
-    def convertToListCoords(self, x, y):
-        return int(x//(16*3)-1), int(y//(16*3)-4) #cols, rows
+    def convertToRowCol(self, x, y):
+        row, col = int(y//(16*3)-4), int(x//(16*3)-1)
+        return row, col
 
     def __repr__(self):
         info = ''
