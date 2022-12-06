@@ -338,7 +338,7 @@ def gameMode_keyPressed(app, event):
                         app.chef1.holding = None        
     elif event.key == 'm':
         if app.rat != None:
-            if abs(app.chef1.cx-app.rat.moveX) <= app.boxSize and abs(app.chef1.cy-app.rat.moveY) <= app.boxSize:
+            if abs(app.chef1.cx-app.rat.x) <= app.boxSize and abs(app.chef1.cy-app.rat.y) <= app.boxSize:
                 app.rat.dead = True
                 app.rat = None
     elif event.key == 'Escape':
@@ -384,7 +384,7 @@ def gameMode_timerFired(app):
                 app.orders.pop(orderNum) #remove order w/o rewarding points
             else:
                 orderNum += 1
-    if 0 <= app.time%(10*10) <= 2 and app.usedCounters != [] and app.rat == None:
+    if 0 <= app.time%(5*10) <= 2 and app.usedCounters != [] and app.rat == None:
         setRatTarget(app)
     if app.rat != None:
         # if app.time%5==0:
@@ -434,8 +434,8 @@ def setRatTarget(app):
             app.rat = Rat(app, target)
         else:
             # app.rat.resetPath()
-            x, y = app.rat.convertToRowCol(app.rat.moveX, app.rat.moveY)
-            app.rat.generatePath(target, x, y)
+            row, col = app.rat.convertToRowCol(app.rat.x, app.rat.y)
+            app.rat.generatePath(target, row, col)
 
 def gameMode_redrawAll(app, canvas):
     #draws map
@@ -529,9 +529,7 @@ def gameMode_redrawAll(app, canvas):
         canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.image))
     #draws rat
     if app.rat != None and not app.rat.dead:
-        canvas.create_image(app.rat.moveX+app.boxSize/2, app.rat.moveY+app.boxSize/2, image=ImageTk.PhotoImage(app.rat.image))
-        # canvas.create_oval(app.rat.moveX, app.rat.moveY, app.rat.moveX+app.boxSize, app.rat.moveY+app.boxSize)
-        # canvas.create_text(app.rat.moveX, app.rat.moveY, text=app.rat)
+        canvas.create_image(app.rat.x+app.boxSize/2, app.rat.y+app.boxSize/2, image=ImageTk.PhotoImage(app.rat.image))
     #draws game over screen
     if app.gameOver:
         canvas.create_text(app.width/2, 2/5*app.height, text="Time's Up!", fill='white', font='Arial 20 bold')
