@@ -56,7 +56,7 @@ def appStarted(app):
     app.time = 0
     app.timerDelay = 100
     app.endTime = 120*10 #125
-    app.paused = False
+    app.paused = True
     app.score = 0
     app.maxScore = 0
     app.gameOver = False
@@ -70,6 +70,24 @@ def appStarted(app):
 
     app.multiplayer = True
     app.chef2 = Chef(2, app.width/2+16*3, app.height/2+16*3, app.boxSize, app)
+    loadHelpImages(app)
+
+def loadHelpImages(app):
+    app.sinkIm = app.loadImage('sink.png')
+    app.boxIm = app.loadImage('box.png')
+    app.trashIm = app.loadImage('trash.png')
+    app.chopBoardIm = app.loadImage('chopBoard.png')
+    app.stoveIm = app.loadImage('stove.png')
+    app.orderBoxIm = app.loadImage('orderBox.png')
+    app.ratIm = app.loadImage('rat.png')
+    app.wasd = app.loadImage('https://pixelartmaker-data-78746291193.nyc3.digitaloceanspaces.com/image/1f923d1c3a1f8b0.png')
+    app.wasd = app.scaleImage(app.wasd, 1/5)
+    app.breadIm = app.loadImage('bread.png')
+    app.meatIm = app.loadImage('meat.png')
+    app.tomatoIm = app.loadImage('tomato.png')
+    app.lettuceIm = app.loadImage('lettuce.png')
+    app.plateIm = app.loadImage('clean_plate.png')
+    app.dirtyPlateIm = app.loadImage('dirty_plate.png')
 
 def appStopped(app):
     # app.gameMusic.stop()
@@ -84,25 +102,53 @@ def startScreenMode_redrawAll(app, canvas):
 def startScreenMode_keyPressed(app, event):
     app.mode = 'helpMode'
     pygame.mixer.music.load('game_music.mp3')
-    pygame.mixer.music.play() #loop this
+    pygame.mixer.music.play()
+    pygame.mixer.music.pause()
 
 # Help Mode
 def helpMode_redrawAll(app, canvas):
-    instructions = '''To move: WASD\nTo chop: Tab\n
-    To put items down/pick up/interact with appliances (boxes, sink, order box, and stove: Space\n
-    Objective: Make and serve burgers on clean plates before orders expire - if you don't serve enough orders, you'll lose!\n
-    Careful! If you leave food on the counters unplated, rats will spawn in and can steal them!\n
-    Press m near a rat to kill it\n
-    To make a burger:
-    - Lettuce, tomato, and meat need to be chopped. Meat must be chopped before it is cooked
-    - Meat needs to be cooked 
-    If you need help while playing, press esc to see this menu again\n
-    Press esc to play/unpause'''
-    canvas.create_text(app.width/2, app.height/2, text=instructions)
+    canvas.create_rectangle(0, 0, app.width, app.height, fill='tan')
+    textFont = 'Arial 13 bold'
+    canvas.create_text(app.width/2, 16*3, text='Instructions', font='Arial 20 bold')
+    canvas.create_image(16*3*2, 16*3*2, image=ImageTk.PhotoImage(app.wasd))
+    canvas.create_text(2/3*app.width, 16*3*2, text='To move up, left, down, and right, use WASD')
+    canvas.create_image(16*3*2, 16*3*3.5, image=ImageTk.PhotoImage(app.boxIm))
+    canvas.create_text(2/3*app.width, 16*3*3.5, text='To spawn in ingredients, click space in front of a box')
+    canvas.create_image(16*3*2, 16*3*5, image=ImageTk.PhotoImage(app.chopBoardIm))
+    canvas.create_image(16*3*3, 16*3*5, image=ImageTk.PhotoImage(app.stoveIm))
+    canvas.create_image(16*3*4, 16*3*5, image=ImageTk.PhotoImage(app.sinkIm))
+    canvas.create_image(16*3*5, 16*3*5, image=ImageTk.PhotoImage(app.trashIm))
+    canvas.create_text(2/3*app.width, 16*3*5, text='Press space to interact with chop boards, stoves, sinks, and the trash')
+    canvas.create_image(16*3*2, 16*3*6.5, image=ImageTk.PhotoImage(app.breadIm))
+    canvas.create_image(16*3*3, 16*3*6.5, image=ImageTk.PhotoImage(app.meatIm))
+    canvas.create_image(16*3*4, 16*3*6.5, image=ImageTk.PhotoImage(app.tomatoIm))
+    canvas.create_image(16*3*5, 16*3*6.5, image=ImageTk.PhotoImage(app.lettuceIm))
+    canvas.create_image(16*3*6, 16*3*6.5, image=ImageTk.PhotoImage(app.plateIm))
+    canvas.create_text(2/3*app.width, 16*3*6.5, text='To make a burger, you must chop your meat and veggies\nand cook your meat. Make sure to plate it before you serve!\nPress space to place and pick up food on counters')
+    canvas.create_image(16*3*2, 16*3*8, image=ImageTk.PhotoImage(app.orderBoxIm))
+    canvas.create_text(3/5*app.width, 16*3*8, text="Orders will pop up at the top. Complete and serve them at the order box before they expire!\nIf you don't complete enough orders, you'll lose! (Big orders are worth more points)")
+    canvas.create_image(16*3*2, 16*3*9.5, image=ImageTk.PhotoImage(app.dirtyPlateIm))
+    canvas.create_text(2/3*app.width, 16*3*9.5, text='After serving a burger, the plate comes back below the order box dirty.\nYou must wash them to use them again. You only get 2 plates')
+    canvas.create_image(16*3*2, 16*3*11, image=ImageTk.PhotoImage(app.ratIm))
+    canvas.create_text(2/3*app.width, 16*3*11, text='Careful! If you leave food on the counters unplated, rats will spawn in and can steal them!\nPress m near a rat to kill it')
+    canvas.create_text(app.width/2, 16*3*12, font='Arial 15 bold', text='If you need help while playing, press esc to see this menu again\nPress esc to play/unpause')
+    # instructions = '''To move: WASD\nTo chop: Tab\n
+    # To put items down/pick up/interact with appliances (boxes, sink, order box, and stove: Space\n
+    # Objective: Make and serve burgers on clean plates before orders expire - if you don't serve enough orders, you'll lose!\n
+    # Careful! If you leave food on the counters unplated, rats will spawn in and can steal them!\n
+    # Press m near a rat to kill it\n
+    # To make a burger:
+    # - Lettuce, tomato, and meat need to be chopped. Meat must be chopped before it is cooked
+    # - Meat needs to be cooked 
+    # If you need help while playing, press esc to see this menu again\n
+    # Press esc to play/unpause'''
+    # canvas.create_text(app.width/2, app.height/2, text=instructions)
 
 def helpMode_keyPressed(app, event):
     if event.key == 'Escape':
         app.mode = 'gameMode'
+        app.paused = False
+        pygame.mixer.music.unpause()
 
 # Game Mode
 
@@ -159,6 +205,11 @@ def gameMode_keyPressed(app, event):
                 if stove.withinBox(app.chef1):
                     #cook() only cooks if given chopped meat
                     app.chef1.cook()
+            #checks if in range of chopping board
+            for board in app.chopBoards:
+                if board.withinBox(app.chef1) and (isinstance(app.chef1.holding, Veggie)
+                        or isinstance(app.chef1.holding, Meat)):
+                    app.chef1.chop()
             #checks if within range of trash box, if so then trashes object
             if (app.trash.withinBox(app.chef1) and not isinstance(app.chef1.holding, Plate)):
                 if app.chef1.holding.plate != None:
@@ -284,20 +335,15 @@ def gameMode_keyPressed(app, event):
                             app.plateCounters.append(newCounter)
                         else:
                             app.usedCounters.append(newCounter)
-                        app.chef1.holding = None
-    elif event.key == 'Tab':
-        #checks if in range of chopping board
-        for board in app.chopBoards:
-            if board.withinBox(app.chef1) and (isinstance(app.chef1.holding, Veggie)
-                    or isinstance(app.chef1.holding, Meat)):
-                app.chef1.chop()
+                        app.chef1.holding = None        
     elif event.key == 'm':
         if app.rat != None:
-            if abs(app.chef1.cx-app.rat.moveX) <= app.boxSize*(3/4) and abs(app.chef1.cy-app.rat.moveY) <= app.boxSize*(3/4):
+            if abs(app.chef1.cx-app.rat.moveX) <= app.boxSize and abs(app.chef1.cy-app.rat.moveY) <= app.boxSize:
                 app.rat.dead = True
                 app.rat = None
     elif event.key == 'Escape':
-        app.paused = not app.paused
+        app.paused = True
+        pygame.mixer.music.pause()
         app.mode = 'helpMode'
 
 def gameMode_timerFired(app):

@@ -2,6 +2,7 @@ import random
 import decimal
 import copy
 from cmu_112_graphics import *
+import astar
 
 #################################################
 # Helper functions from 
