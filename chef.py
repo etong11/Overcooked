@@ -58,24 +58,6 @@ class Chef:
             self.animationName = name
         else:
             self.counterDict[name] = (1+self.counterDict[name])%len(self.animation)
-        
-        # if self.animationName != name:
-        #     print('making sprites')
-        #     sprites = []
-        #     spriteStrip = None
-        #     if name == 'down':
-        #         spriteStrip = app.loadImage('chef_down.png')
-        #     if spriteStrip != None:
-        #         spriteLen = spriteStrip.size[0]/(16*3)
-        #         for i in range(spriteLen):
-        #             sprite = spriteStrip.crop((16*3*i, 0, 16*3*(i+1), 16*3))
-        #             sprites.append(sprite)
-        #     self.animation = sprites
-        #     self.spriteCounter = 0
-        #     self.animationName = name
-        # else:
-        #     print('not working')
-        #     self.spriteCounter = (1+self.spriteCounter)%len(self.animation)
 
     def chop(self):
         #add time to chopping

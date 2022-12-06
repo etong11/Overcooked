@@ -63,6 +63,7 @@ def appStarted(app):
     app.mode = 'startScreenMode'
     app.usedCounters = []
     app.orders = [Order(app)] #creates new order when game starts
+    # app.level = ''
     #Music code copied and modified from https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#playingSounds
     
     #Music code for game music copied from https://www.geeksforgeeks.org/python-playing-audio-file-in-pygame/
@@ -79,7 +80,7 @@ def loadHelpImages(app):
     app.chopBoardIm = app.loadImage('chopBoard.png')
     app.stoveIm = app.loadImage('stove.png')
     app.orderBoxIm = app.loadImage('orderBox.png')
-    app.ratIm = app.loadImage('rat.png')
+    app.ratIm = app.loadImage('rat_rest.png')
     app.wasd = app.loadImage('https://pixelartmaker-data-78746291193.nyc3.digitaloceanspaces.com/image/1f923d1c3a1f8b0.png')
     app.wasd = app.scaleImage(app.wasd, 1/5)
     app.breadIm = app.loadImage('bread.png')
@@ -100,6 +101,11 @@ def startScreenMode_redrawAll(app, canvas):
 
 # Mode code based off of https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#usingModes
 def startScreenMode_keyPressed(app, event):
+    # if event.key in ['1', '2']:
+    #     if event.key == '1':
+    #         app.level = 'easy'
+    #     else:
+    #         app.level = 'hard'
     app.mode = 'helpMode'
     pygame.mixer.music.load('game_music.mp3')
     pygame.mixer.music.play()
@@ -132,17 +138,6 @@ def helpMode_redrawAll(app, canvas):
     canvas.create_image(16*3*2, 16*3*11, image=ImageTk.PhotoImage(app.ratIm))
     canvas.create_text(2/3*app.width, 16*3*11, text='Careful! If you leave food on the counters unplated, rats will spawn in and can steal them!\nPress m near a rat to kill it')
     canvas.create_text(app.width/2, 16*3*12, font='Arial 15 bold', text='If you need help while playing, press esc to see this menu again\nPress esc to play/unpause')
-    # instructions = '''To move: WASD\nTo chop: Tab\n
-    # To put items down/pick up/interact with appliances (boxes, sink, order box, and stove: Space\n
-    # Objective: Make and serve burgers on clean plates before orders expire - if you don't serve enough orders, you'll lose!\n
-    # Careful! If you leave food on the counters unplated, rats will spawn in and can steal them!\n
-    # Press m near a rat to kill it\n
-    # To make a burger:
-    # - Lettuce, tomato, and meat need to be chopped. Meat must be chopped before it is cooked
-    # - Meat needs to be cooked 
-    # If you need help while playing, press esc to see this menu again\n
-    # Press esc to play/unpause'''
-    # canvas.create_text(app.width/2, app.height/2, text=instructions)
 
 def helpMode_keyPressed(app, event):
     if event.key == 'Escape':
@@ -151,7 +146,6 @@ def helpMode_keyPressed(app, event):
         pygame.mixer.music.unpause()
 
 # Game Mode
-
 def gameMode_mousePressed(app, event):
     # if app.multiplayer:
     # app.chef2.move(app, app.chef2.cx-event.x, app.chef2.cy-event.y)
@@ -339,14 +333,19 @@ def gameMode_keyPressed(app, event):
     elif event.key == 'm':
         if app.rat != None:
             if abs(app.chef1.cx-app.rat.x) <= app.boxSize and abs(app.chef1.cy-app.rat.y) <= app.boxSize:
+                app.rat.counterDict[app.rat.animationName] = 0
+                app.rat.animationName = ''
+                app.rat.animation = []
+                app.rat.image = app.hitImage
                 app.rat.dead = True
-                app.rat = None
     elif event.key == 'Escape':
         app.paused = True
         pygame.mixer.music.pause()
         app.mode = 'helpMode'
 
 def gameMode_timerFired(app):
+    if app.rat != None and app.rat.dead:
+        app.rat = None
     if app.chef1.animationName in ['chop', 'cook', 'wash']:
         name = app.chef1.animationName
         if app.chef1.counterDict[name] < len(app.chef1.animation):
@@ -388,37 +387,27 @@ def gameMode_timerFired(app):
         setRatTarget(app)
     if app.rat != None:
         # if app.time%5==0:
-        if app.rat.target != None:
+        if app.rat.pathPlanner.target != None:
             app.rat.grabFood()
         #Note: may be buggy if pick up food right before rat gets to it
         if app.rat.hasFood:
             # print('has food')
-            app.usedCounters.remove(app.rat.target)
+            app.usedCounters.remove(app.rat.pathPlanner.target)
             app.rat = None
         else:
             ingredMoved = True
-            # otherIngred = None
             for counter in app.usedCounters:
-                if counter == app.rat.target:
+                if counter == app.rat.pathPlanner.target:
                     ingredMoved = False
-                # if isinstance(counter.ingredient, Ingredient) or isinstance(counter.ingredient, Burger) and not ingredMoved:
-                #     otherIngred = counter
             if ingredMoved:
-                # app.rat.dead = True
-                # app.rat = None
                 if app.usedCounters == []:
-                    app.rat.resetPath()
-                    app.rat.target = None
-                # print('other', otherIngred)
-                # if otherIngred == None:
-                #     app.rat.resetPath()
-                #     app.rat.target = None
+                    app.rat.pathPlanner.resetPath()
+                    app.rat.pathPlanner.target = None
+                    app.rat.counterDict[app.rat.animationName] = 0
+                    app.rat.animation = []
+                    app.rat.animationName = ''
                 else:
                     setRatTarget(app)
-                # elif otherIngred != None:
-                #     y, x = app.rat.convertToListCoords(app.rat.y, app.rat.x)
-                #     print(otherIngred.ingredient)
-                #     app.rat.generatePath(otherIngred, y, x)
 
 def setRatTarget(app):
     #spawns in a rat with a given target
@@ -434,8 +423,8 @@ def setRatTarget(app):
             app.rat = Rat(app, target)
         else:
             # app.rat.resetPath()
-            row, col = app.rat.convertToRowCol(app.rat.x, app.rat.y)
-            app.rat.generatePath(target, row, col)
+            row, col = PathPlan.convertToRowCol(app.rat.x, app.rat.y)
+            app.rat.pathPlanner.generatePath(target, row, col)
 
 def gameMode_redrawAll(app, canvas):
     #draws map
@@ -528,8 +517,12 @@ def gameMode_redrawAll(app, canvas):
         cx, cy = counter.x0+app.boxSize/2, counter.y0+app.boxSize/2
         canvas.create_image(cx, cy, image=ImageTk.PhotoImage(counter.ingredient.image))
     #draws rat
-    if app.rat != None and not app.rat.dead:
-        canvas.create_image(app.rat.x+app.boxSize/2, app.rat.y+app.boxSize/2, image=ImageTk.PhotoImage(app.rat.image))
+    if app.rat != None:
+        if app.rat.animation != [] and app.rat.pathPlanner.target != None:
+            i = app.rat.counterDict[app.rat.animationName]
+            canvas.create_image(app.rat.x+app.boxSize/2, app.rat.y+app.boxSize/2, image=ImageTk.PhotoImage(app.rat.animation[i]))
+        else:
+            canvas.create_image(app.rat.x+app.boxSize/2, app.rat.y+app.boxSize/2, image=ImageTk.PhotoImage(app.rat.image))
     #draws game over screen
     if app.gameOver:
         canvas.create_text(app.width/2, 2/5*app.height, text="Time's Up!", fill='white', font='Arial 20 bold')
