@@ -407,7 +407,7 @@ def gameMode_timerFired(app):
                 # app.rat.dead = True
                 # app.rat = None
                 if app.usedCounters == []:
-                    app.rat.resetPath()
+                    app.rat.newPathresetPath()
                     app.rat.target = None
                 # print('other', otherIngred)
                 # if otherIngred == None:
@@ -435,7 +435,7 @@ def setRatTarget(app):
         else:
             # app.rat.resetPath()
             y, x = app.rat.convertToListCoords(app.rat.moveX, app.rat.moveY)
-            app.rat.generatePath(target, x, y)
+            app.rat.newPath.generatePath(target, x, y)
 
 def gameMode_redrawAll(app, canvas):
     #draws map
