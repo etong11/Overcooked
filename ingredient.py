@@ -39,10 +39,10 @@ class Veggie(Ingredient):
         self.image = self.rawImage
 
     def __repr__(self):
-        chopped = ''
-        if self.isChopped:
-            chopped = '(chopped)'
-        return self.type.capitalize()+' '+chopped
+        # chopped = ''
+        # if self.isChopped:
+        #     chopped = '(chopped)'
+        return self.type.capitalize()
 
     def __eq__(self, other):
         if (isinstance(other, Veggie) and self.type == other.type 
@@ -70,13 +70,13 @@ class Meat(Ingredient):
         self.image = self.rawImage
     
     def __repr__(self):
-        chopped = ''
-        cooked = ''
-        if self.isChopped:
-            chopped = '(chopped)'
-        if self.isCooked:
-            cooked = '(cooked)'
-        return self.type.capitalize()+' '+chopped+cooked
+        # chopped = ''
+        # cooked = ''
+        # if self.isChopped:
+        #     chopped = '(chopped)'
+        # if self.isCooked:
+        #     cooked = '(cooked)'
+        return self.type.capitalize()
     
     def __eq__(self, other):
         #possibly just str(self) == str(other) ???
@@ -97,6 +97,7 @@ class Meat(Ingredient):
         self.isCooked = True
         self.isRaw = False
         self.image = self.cookedImage
+        self.rawImage = self.choppedImage
 
 class Burger:
     def __init__(self, ingredients, app):
@@ -144,6 +145,7 @@ class Burger:
     
     def burgerImage(self, app):
         if self.hasIngredType('bread'):
+            self.imageList = False
             size = len(self.ingredients)
             if size == 4:
                 self.image = app.loadImage('full_burg.png')

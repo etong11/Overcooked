@@ -15,13 +15,17 @@ class Chef:
         self.animationName = ''
         self.animationDict = dict()
         self.counterDict = dict()
-        animations = ['up', 'down', 'left', 'right', 'chop', 'cook']
+        animations = ['up', 'down', 'left', 'right', 'chop', 'cook', 'wash']
         #code for making animations from a sprite sheet modified from https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#spritesheetsWithCropping
         for animation in animations:
             isFlipped = False
+            isWash = False
             if animation == 'right':
                 isFlipped = True
                 animation = 'left'
+            elif animation == 'wash':
+                isWash = True
+                animation = 'cook'
             imageName = 'chef_' + animation + '.png'
             spriteStrip = app.loadImage(imageName)
             sprites = []
@@ -33,12 +37,14 @@ class Chef:
                 sprites.append(sprite)
             if isFlipped:
                 animation = 'right'
+            elif isWash:
+                animation = 'wash'
             self.animationDict[animation] = sprites
             self.counterDict[animation] = 0
     
     def move(self, app, dx, dy):
         #moves by 1 pixel which = 3
-        newX, newY = self.cx + 6*dx, self.cy + 6*dy
+        newX, newY = self.cx + 8*dx, self.cy + 8*dy
         if (app.counterX0 <= (newX - self.r) and 
             app.counterX1 >= (newX + self.r) and 
             app.counterY0 <= (newY - self.r) and
@@ -96,7 +102,7 @@ class Chef:
     
     def wash(self):
         self.holding.makeClean()
-        self.setAnimation('cook')
+        self.setAnimation('wash')
     
     def discard(self):
         if self.holding != None:

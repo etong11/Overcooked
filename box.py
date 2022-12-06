@@ -23,7 +23,7 @@ class Box:
                 return True
         #checks if obj is within box on the top or bottom
         elif (chef.cy+chef.r == self.y0 or chef.cy-chef.r == self.y1) and self.x0 <= chef.cx <= self.x1:
-            if chef.animationName in ['up', 'down', 'chop', 'cook']:
+            if chef.animationName in ['up', 'down', 'chop', 'cook', 'wash']:
                 return True
         else:
             return False
