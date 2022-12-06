@@ -18,24 +18,20 @@ def roundHalfUp(d):
 #################################################
 
 class Rat:
-    #change so that x,y are cells
+    #target is a counter with an ingredient (which is what is the target)
     def __init__(self, app, target):
-        self.bounds = [app.counterX0, app.counterY0, app.counterX1, app.counterY1]
-        self.rows, self.cols = 8, 13 #change to not include counters (target is cell in front of food)
-        self.x, self.y = random.randint(0, self.cols-1), random.randint(0, self.rows-1)
+        self.col, self.row = random.randint(0, self.cols-1), random.randint(0, self.rows-1)
         
         self.dead = False
         self.hasFood = False
-        # print('target', self.targetX, self.targetY)
-        # print('rat', self.x, self.y)
         
-        self.moveX, self.moveY = self.convertToPixels(self.y, self.x)
+        self.moveX, self.moveY = self.convertToPixels(self.row, self.col)
         self.moveTarget = (-1,-1)
         #Rat image credit: from https://www.pixilart.com/draw/big-ear-rat-9b1f2c785eb607a
         self.image = app.loadImage('rat.png')
         self.isFlipped = False
         # self.stop = False
-        self.generatePath(target, self.y, self.x)
+        self.generatePath(target, self.row, self.col)
 
     ############################################################################
     #A* algorithm logic taken from https://isaaccomputerscience.org/concepts/dsa_search_a_star?examBoard=all&stage=all
@@ -45,8 +41,7 @@ class Rat:
         self.targetX, self.targetY = self.convertToListCoords(target.x0, target.y0)
         self.start = (startY, startX)
         self.end = (self.targetY, self.targetX)
-        # print('target', self.targetY, self.targetX)
-        # print('rat', self.x, self.y)
+
         print('start', self.start)
         print('end', self.end)
         startNode = Node(self.start, 0, self.findHScore(self.start), None)
