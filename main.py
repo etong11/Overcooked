@@ -340,6 +340,7 @@ def gameMode_keyPressed(app, event):
 
 def gameMode_timerFired(app):
     if app.gameOver: #if game over, function stops running
+        pygame.mixer.music.pause()
         return
     if not app.paused:
         app.time += 1
