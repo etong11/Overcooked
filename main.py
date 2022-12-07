@@ -12,7 +12,7 @@ from box import *
 from rat import *
 
 ################################################################################
-#Overcooked! - A Ratty Situation
+#Overcooked!: A Ratty Situation
 #Note on graphics: Map size is 720x528 and is divided into 15x11 total boxes, each sized (16*3)x(16*3)
 ################################################################################
 
