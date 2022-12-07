@@ -188,7 +188,7 @@ class Order:
             self.orderDoubled = True
             self.totalTime = 60*10
         else:
-            self.totalTime = 30*10
+            self.totalTime = 40*10
             self.order = Burger([bread, meat, item], app)
             if item.type == 'tomato':
                 self.image = app.loadImage('order2.png')
