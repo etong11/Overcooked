@@ -22,6 +22,7 @@ class PathPlan:
         self.startX, self.startY = startX, startY
         self.startRow, self.startCol = self.convertToRowCol(startX, startY)
         self.target = target #targets a counter with food on it
+        self.obstacles = app.obstacles
         self.resetPath()
         self.generatePath(target, self.startRow, self.startCol)
 
@@ -73,6 +74,8 @@ class PathPlan:
         for loc in [(0,1), (0,-1), (1,0), (-1,0)]:
             drow, dcol = loc[0], loc[1]
             neighbor = (row+drow, col+dcol)
+            if neighbor in self.obstacles:
+                continue
             if 0 <= neighbor[0] < PathPlan.rows and 0 <= neighbor[1] < PathPlan.cols:
                 isVisited = False
                 for node in self.visited:

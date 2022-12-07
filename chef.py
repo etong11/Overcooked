@@ -1,5 +1,6 @@
 import ingredient
 from cmu_112_graphics import *
+from astar import *
 
 class Chef:
     def __init__(self, player, cx, cy, radius, app):
@@ -44,12 +45,22 @@ class Chef:
     
     def move(self, app, dx, dy):
         #moves by 1 pixel which = 3
+        inRock = False
         newX, newY = self.cx + 8*dx, self.cy + 8*dy
         if (app.counterX0 <= (newX - self.r) and 
             app.counterX1 >= (newX + self.r) and 
             app.counterY0 <= (newY - self.r) and
             app.counterY1 >= (newY + self.r)):
-            self.cx, self.cy = newX, newY
+            if app.obstacles != []:
+                for obstacle in app.obstacles:
+                    row, col = obstacle[0], obstacle[1]
+                    x, y = PathPlan.convertToPixels(row, col) #x,y will be coords of top left corner of tile obstacle is in
+                    if x-self.r < newX < x+16*3+self.r and y-self.r < newY < y+16*3+self.r:
+                        inRock = True
+                if not inRock:
+                    self.cx, self.cy = newX, newY
+            else:
+                self.cx, self.cy = newX, newY
 
     def setAnimation(self, name):
         self.animation = self.animationDict[name]

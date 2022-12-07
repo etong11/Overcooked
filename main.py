@@ -3,6 +3,7 @@ import cs112_f22_week10_linter
 import decimal
 import copy
 import pygame
+import random
 
 #Import object classes
 from ingredient import *
@@ -21,6 +22,8 @@ def appStarted(app):
     url = 'https://www.team17.com/wp-content/uploads/2020/08/Overcooked_iPad_Tile.jpg'
     app.homescreen = app.loadImage(url)
     app.homescreen = app.scaleImage(app.homescreen, 1/1.75)
+    #Rock image source: http://pixelartmaker.com/art/da268f06e621b21
+    app.rock = app.loadImage('rock.png')
     #characters
     app.chef1 = Chef(1, app.width/2, app.height/2, 24, app)
     app.rat = None
@@ -55,7 +58,7 @@ def appStarted(app):
     #other variables
     app.time = 0
     app.timerDelay = 100
-    app.endTime = 120*10 #125
+    app.endTime = 5*10 #120
     app.paused = True
     app.score = 0
     app.maxScore = 0
@@ -63,32 +66,15 @@ def appStarted(app):
     app.mode = 'startScreenMode'
     app.usedCounters = []
     app.orders = [Order(app)] #creates new order when game starts
-    # app.level = ''
+    app.level = ''
+    app.obstacles = []
+    app.instructions = app.loadImage('instructions.jpg')
     #Music code copied and modified from https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#playingSounds
     
     #Music code for game music copied from https://www.geeksforgeeks.org/python-playing-audio-file-in-pygame/
     pygame.mixer.init()
 
-    app.multiplayer = True
-    app.chef2 = Chef(2, app.width/2+16*3, app.height/2+16*3, app.boxSize, app)
-    loadHelpImages(app)
-
-def loadHelpImages(app):
-    app.sinkIm = app.loadImage('sink.png')
-    app.boxIm = app.loadImage('box.png')
-    app.trashIm = app.loadImage('trash.png')
-    app.chopBoardIm = app.loadImage('chopBoard.png')
-    app.stoveIm = app.loadImage('stove.png')
-    app.orderBoxIm = app.loadImage('orderBox.png')
-    app.ratIm = app.loadImage('rat_rest.png')
-    app.wasd = app.loadImage('https://pixelartmaker-data-78746291193.nyc3.digitaloceanspaces.com/image/1f923d1c3a1f8b0.png')
-    app.wasd = app.scaleImage(app.wasd, 1/5)
-    app.breadIm = app.loadImage('bread.png')
-    app.meatIm = app.loadImage('meat.png')
-    app.tomatoIm = app.loadImage('tomato.png')
-    app.lettuceIm = app.loadImage('lettuce.png')
-    app.plateIm = app.loadImage('clean_plate.png')
-    app.dirtyPlateIm = app.loadImage('dirty_plate.png')
+    # app.chef2 = Chef(2, app.width/2+16*3, app.height/2+16*3, app.boxSize, app)
 
 def appStopped(app):
     # app.gameMusic.stop()
@@ -97,47 +83,35 @@ def appStopped(app):
 # Start Screen Mode
 def startScreenMode_redrawAll(app, canvas):
     canvas.create_image(app.width/2, app.height/2, image=ImageTk.PhotoImage(app.homescreen))
-    canvas.create_text(app.width/2, app.height*(9/10), text='Press any key to start', fill='white', font='Arial 20 bold')
+    canvas.create_text(app.width/4, app.height*(9/10), text="Press '1' for normal mode", fill='white', font='Arial 16 bold')
+    canvas.create_text(app.width*(3/4), app.height*(9/10), text="Press '2' for hard mode", fill='white', font='Arial 16 bold')
 
 # Mode code based off of https://www.cs.cmu.edu/~112/notes/notes-animations-part4.html#usingModes
 def startScreenMode_keyPressed(app, event):
-    # if event.key in ['1', '2']:
-    #     if event.key == '1':
-    #         app.level = 'easy'
-    #     else:
-    #         app.level = 'hard'
-    app.mode = 'helpMode'
-    pygame.mixer.music.load('game_music.mp3')
-    pygame.mixer.music.play()
-    pygame.mixer.music.pause()
+    if event.key in ['1', '2']:
+        if event.key == '1':
+            app.level = 'easy'
+        else:
+            app.level = 'hard'
+            spawnObstacles(app)
+        app.mode = 'helpMode'
+        pygame.mixer.music.load('game_music.mp3')
+        pygame.mixer.music.play()
+        pygame.mixer.music.pause()
+
+def spawnObstacles(app):
+    while len(app.obstacles) < 8: #spawns in 8 obstacles
+        col, row = random.randint(0+2, PathPlan.cols-1-2), random.randint(0+2, PathPlan.rows-1-2)
+        if (row, col) in app.obstacles:
+            continue
+        elif (row, col) == PathPlan.convertToRowCol(app.chef1.cx, app.chef1.cy):
+            continue
+        else:
+            app.obstacles.append((row, col))
 
 # Help Mode
 def helpMode_redrawAll(app, canvas):
-    canvas.create_rectangle(0, 0, app.width, app.height, fill='tan')
-    textFont = 'Arial 13 bold'
-    canvas.create_text(app.width/2, 16*3, text='Instructions', font='Arial 20 bold')
-    canvas.create_image(16*3*2, 16*3*2, image=ImageTk.PhotoImage(app.wasd))
-    canvas.create_text(2/3*app.width, 16*3*2, text='To move up, left, down, and right, use WASD')
-    canvas.create_image(16*3*2, 16*3*3.5, image=ImageTk.PhotoImage(app.boxIm))
-    canvas.create_text(2/3*app.width, 16*3*3.5, text='To spawn in ingredients, click space in front of a box')
-    canvas.create_image(16*3*2, 16*3*5, image=ImageTk.PhotoImage(app.chopBoardIm))
-    canvas.create_image(16*3*3, 16*3*5, image=ImageTk.PhotoImage(app.stoveIm))
-    canvas.create_image(16*3*4, 16*3*5, image=ImageTk.PhotoImage(app.sinkIm))
-    canvas.create_image(16*3*5, 16*3*5, image=ImageTk.PhotoImage(app.trashIm))
-    canvas.create_text(2/3*app.width, 16*3*5, text='Press space to interact with chop boards, stoves, sinks, and the trash')
-    canvas.create_image(16*3*2, 16*3*6.5, image=ImageTk.PhotoImage(app.breadIm))
-    canvas.create_image(16*3*3, 16*3*6.5, image=ImageTk.PhotoImage(app.meatIm))
-    canvas.create_image(16*3*4, 16*3*6.5, image=ImageTk.PhotoImage(app.tomatoIm))
-    canvas.create_image(16*3*5, 16*3*6.5, image=ImageTk.PhotoImage(app.lettuceIm))
-    canvas.create_image(16*3*6, 16*3*6.5, image=ImageTk.PhotoImage(app.plateIm))
-    canvas.create_text(2/3*app.width, 16*3*6.5, text='To make a burger, you must chop your meat and veggies\nand cook your meat. Make sure to plate it before you serve!\nPress space to place and pick up food on counters')
-    canvas.create_image(16*3*2, 16*3*8, image=ImageTk.PhotoImage(app.orderBoxIm))
-    canvas.create_text(3/5*app.width, 16*3*8, text="Orders will pop up at the top. Complete and serve them at the order box before they expire!\nIf you don't complete enough orders, you'll lose! (Big orders are worth more points)")
-    canvas.create_image(16*3*2, 16*3*9.5, image=ImageTk.PhotoImage(app.dirtyPlateIm))
-    canvas.create_text(2/3*app.width, 16*3*9.5, text='After serving a burger, the plate comes back below the order box dirty.\nYou must wash them to use them again. You only get 2 plates')
-    canvas.create_image(16*3*2, 16*3*11, image=ImageTk.PhotoImage(app.ratIm))
-    canvas.create_text(2/3*app.width, 16*3*11, text='Careful! If you leave food on the counters unplated, rats will spawn in and can steal them!\nPress m near a rat to kill it')
-    canvas.create_text(app.width/2, 16*3*12, font='Arial 15 bold', text='If you need help while playing, press esc to see this menu again\nPress esc to play/unpause')
+    canvas.create_image(app.width/2, app.height/2, image=ImageTk.PhotoImage(app.instructions))
 
 def helpMode_keyPressed(app, event):
     if event.key == 'Escape':
@@ -146,16 +120,13 @@ def helpMode_keyPressed(app, event):
         pygame.mixer.music.unpause()
 
 # Game Mode
-def gameMode_mousePressed(app, event):
-    # if app.multiplayer:
-    # app.chef2.move(app, app.chef2.cx-event.x, app.chef2.cy-event.y)
-    # app.chef2.cx = event.x
-    # app.chef2.cy = event.y
-    pass
-
 def gameMode_keyPressed(app, event):
     if app.gameOver:
-        return
+        if event.key == 'Enter':
+            app.gameOver = False
+            appStarted(app)
+        else:
+            return
     if not app.chef1.animationName in ['chop', 'cook', 'wash']:
         if event.key == 'w':
             app.chef1.move(app, 0, -1)
@@ -219,9 +190,9 @@ def gameMode_keyPressed(app, event):
                 for order in app.orders:
                     if app.chef1.holding == order.order and app.chef1.holding.plate != None and not app.chef1.holding.plate.isDirty:
                         if order.orderDoubled:
-                            app.score += 2
+                            app.score += 2(order.orderTime-order.totalTime+1)
                         else:
-                            app.score += 1
+                            app.score += (order.orderTime-order.totalTime+1)
                         dirtyPlate = app.chef1.serve(order)
                         print('plates', app.plates)
                         print('counters', app.plateCounters)
@@ -367,13 +338,13 @@ def gameMode_timerFired(app):
     #prevent indexing error if no orders
     if app.orders != [] and app.orders[0].orderDone:
         app.orders.pop(0)
-    if app.time%(10*15) == 0 and len(app.orders) <= 5: #sets a max of 5 orders at a time
+    if app.time%(15*10) == 0 and len(app.orders) <= 5: #sets a max of 5 orders at a time
         newOrder = Order(app)
         app.orders.append(newOrder)
         if newOrder.orderDoubled:
-            app.maxScore += 2
+            app.maxScore += 2(newOrder.orderTime)
         else:
-            app.maxScore += 1
+            app.maxScore += newOrder.orderTime
     if app.orders != []:
         orderNum = 0
         while orderNum < len(app.orders):
@@ -383,7 +354,7 @@ def gameMode_timerFired(app):
                 app.orders.pop(orderNum) #remove order w/o rewarding points
             else:
                 orderNum += 1
-    if 0 <= app.time%(5*10) <= 2 and app.usedCounters != [] and app.rat == None:
+    if 0 <= app.time%(10*10) <= 2 and app.usedCounters != [] and app.rat == None:
         setRatTarget(app)
     if app.rat != None:
         # if app.time%5==0:
@@ -430,6 +401,10 @@ def gameMode_redrawAll(app, canvas):
     #draws map
     bgCenterX, bgCenterY = app.width/2, app.height-app.background.size[1]/2
     canvas.create_image(bgCenterX, bgCenterY, image=ImageTk.PhotoImage(app.background))
+    #draws obstacles (if there are any)
+    for obstacle in app.obstacles:
+        x, y = PathPlan.convertToPixels(obstacle[0], obstacle[1])
+        canvas.create_image(x+app.boxSize/2, y+app.boxSize/2, image=ImageTk.PhotoImage(app.rock))
     #draws orders
     ord1X, ord1Y = 0, 0
     for order in app.orders:
@@ -525,11 +500,13 @@ def gameMode_redrawAll(app, canvas):
             canvas.create_image(app.rat.x+app.boxSize/2, app.rat.y+app.boxSize/2, image=ImageTk.PhotoImage(app.rat.image))
     #draws game over screen
     if app.gameOver:
-        canvas.create_text(app.width/2, 2/5*app.height, text="Time's Up!", fill='white', font='Arial 20 bold')
+        canvas.create_rectangle(app.width/5, app.height/3, app.width*(4/5), app.height*(2/3), fill='light blue')
+        canvas.create_text(app.width/2, 2/5*app.height, text="Time's Up!", font='Arial 20 bold')
         if app.score >= app.maxScore/3:
             outcome = 'win!'
         else:
             outcome = 'lose.'
-        canvas.create_text(app.width/2, 3/5*app.height, fill='white', text=f'Your score was {app.score}. You {outcome}', font='Arial 20 bold')
+        canvas.create_text(app.width/2, 2.5/5*app.height, text=f'Your score was {app.score}. You {outcome}', font='Arial 20 bold')
+        canvas.create_text(app.width/2, 3/5*app.height, text='Press ENTER to play again', font='Arial 20 bold')
 
 runApp(width=720, height=528+32*3)
