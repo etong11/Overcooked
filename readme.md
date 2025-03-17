@@ -1,8 +1,7 @@
-# Term-Project
-Title: Overcooked!: A Ratty Situation
+# Overcooked!: A Ratty Situation
 The game closely models that of the actual Overcooked game. Players will prepare to make burgers by grabbing ingredients, chopping vegetables, and cooking meat. They will then assemble the ingredients to make the burger and serve it on a plate to be given to the customer. Afterwards, they must wash dishes before they can be used again. Players will be given orders which will expire after a certain amount of time. Rats will spawn throughout the game if there are unplated ingredients, using A* as its path planning algorithm. There are two gameplay modes: normal and hard. Hard mode will be the same as normal mode except that there are obstacles the player must navigate around.
 
-How to run the project:
+## How to run the project:
 The project must be run from main.py
 
 Libraries:
